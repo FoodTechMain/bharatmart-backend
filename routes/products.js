@@ -1,9 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Product = require('../models/Product');
-const Shop = require('../models/Shop');
-const Category = require('../models/Category');
-const { authenticateToken, requirePermission, requireShopOwnership } = require('../middleware/auth');
+const { authenticateToken, requirePermission } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -13,7 +11,6 @@ router.get('/', authenticateToken, async (req, res) => {
     const { 
       page = 1, 
       limit = 10, 
-      shop, 
       category, 
       search, 
       minPrice, 
@@ -25,7 +22,6 @@ router.get('/', authenticateToken, async (req, res) => {
     
     const query = { isActive: true };
     
-    if (shop) query.shop = shop;
     if (category) query.category = category;
     if (minPrice || maxPrice) {
       query.price = {};
@@ -39,8 +35,7 @@ router.get('/', authenticateToken, async (req, res) => {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
-        { brand: { $regex: search, $options: 'i' } },
-        { tags: { $in: [new RegExp(search, 'i')] } }
+        { brand: { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -48,8 +43,6 @@ router.get('/', authenticateToken, async (req, res) => {
     sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
     const products = await Product.find(query)
-      .populate('shop', 'name logo')
-      .populate('category', 'name')
       .sort(sortOptions)
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -71,18 +64,12 @@ router.get('/', authenticateToken, async (req, res) => {
 // Get product by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id)
-      .populate('shop', 'name logo contactInfo')
-      .populate('category', 'name')
-      .populate('subcategory', 'name');
-    
+    const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-
     // Increment view count
     await product.incrementViews();
-
     res.json(product);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -98,31 +85,46 @@ router.post('/', [
   body('price.regular').isFloat({ min: 0 }).withMessage('Regular price must be a positive number'),
   body('price.sale').optional().isFloat({ min: 0 }).withMessage('Sale price must be a positive number'),
   body('price.cost').optional().isFloat({ min: 0 }).withMessage('Cost price must be a positive number'),
-  // Accept shop and category as string (shop1, category2, etc.)
-  body('shop').isString().withMessage('Shop is required'),
   body('category').isString().withMessage('Category is required'),
+  body('brand').isString().withMessage('Brand is required'),
+  body('sku').optional().isString(),
+  body('barcode').optional().isString(),
+  body('mrp').isFloat({ min: 0 }).withMessage('MRP is required'),
+  body('weight').custom(val => {
+    if (!val || typeof val !== 'object' || !val.value || !val.unit) throw new Error('Weight is required');
+    if (isNaN(val.value) || val.value <= 0) throw new Error('Weight value must be positive');
+    if (typeof val.unit !== 'string') throw new Error('Weight unit is required');
+    return true;
+  }),
+  body('dimensions').optional().custom(val => {
+    if (!val) return true;
+    if (typeof val !== 'object') throw new Error('Dimensions must be an object');
+    if (val.length && (isNaN(val.length) || val.length < 0)) throw new Error('Invalid length');
+    if (val.width && (isNaN(val.width) || val.width < 0)) throw new Error('Invalid width');
+    if (val.height && (isNaN(val.height) || val.height < 0)) throw new Error('Invalid height');
+    if (val.unit && typeof val.unit !== 'string') throw new Error('Invalid unit');
+    return true;
+  }),
+  body('manufacturer').optional().isString(),
+  body('hsn').optional().isString(),
+  body('gst').optional().isFloat({ min: 0 }),
+  body('minOrderQty').optional().isInt({ min: 0 }),
+  body('maxOrderQty').optional().isInt({ min: 0 }),
   body('inventory.quantity').isInt({ min: 0 }).withMessage('Quantity must be a non-negative integer'),
+  body('inventory.lowStockThreshold').optional().isInt({ min: 0 }),
+  body('inventory.trackInventory').optional().isBoolean(),
+  body('shortDescription').optional().isString(),
+  body('seo').optional().isObject(),
+  body('isActive').optional().isBoolean(),
+  body('isFeatured').optional().isBoolean(),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-
-    // Skip shop/category existence check for now
-    // const shop = await Shop.findById(req.body.shop);
-    // if (!shop) {
-    //   return res.status(404).json({ message: 'Shop not found' });
-    // }
-    // const category = await Category.findById(req.body.category);
-    // if (!category) {
-    //   return res.status(404).json({ message: 'Category not found' });
-    // }
-
     const product = new Product(req.body);
     await product.save();
-
-    // No population since shop/category are not ObjectIDs
     res.status(201).json(product);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -138,7 +140,39 @@ router.put('/:id', [
   body('price.regular').optional().isFloat({ min: 0 }).withMessage('Regular price must be a positive number'),
   body('price.sale').optional().isFloat({ min: 0 }).withMessage('Sale price must be a positive number'),
   body('price.cost').optional().isFloat({ min: 0 }).withMessage('Cost price must be a positive number'),
+  body('category').optional().isString(),
+  body('brand').optional().isString(),
+  body('sku').optional().isString(),
+  body('barcode').optional().isString(),
+  body('mrp').optional().isFloat({ min: 0 }),
+  body('weight').optional().custom(val => {
+    if (!val) return true;
+    if (typeof val !== 'object' || !val.value || !val.unit) throw new Error('Weight is required');
+    if (isNaN(val.value) || val.value <= 0) throw new Error('Weight value must be positive');
+    if (typeof val.unit !== 'string') throw new Error('Weight unit is required');
+    return true;
+  }),
+  body('dimensions').optional().custom(val => {
+    if (!val) return true;
+    if (typeof val !== 'object') throw new Error('Dimensions must be an object');
+    if (val.length && (isNaN(val.length) || val.length < 0)) throw new Error('Invalid length');
+    if (val.width && (isNaN(val.width) || val.width < 0)) throw new Error('Invalid width');
+    if (val.height && (isNaN(val.height) || val.height < 0)) throw new Error('Invalid height');
+    if (val.unit && typeof val.unit !== 'string') throw new Error('Invalid unit');
+    return true;
+  }),
+  body('manufacturer').optional().isString(),
+  body('hsn').optional().isString(),
+  body('gst').optional().isFloat({ min: 0 }),
+  body('minOrderQty').optional().isInt({ min: 0 }),
+  body('maxOrderQty').optional().isInt({ min: 0 }),
   body('inventory.quantity').optional().isInt({ min: 0 }).withMessage('Quantity must be a non-negative integer'),
+  body('inventory.lowStockThreshold').optional().isInt({ min: 0 }),
+  body('inventory.trackInventory').optional().isBoolean(),
+  body('shortDescription').optional().isString(),
+  body('seo').optional().isObject(),
+  body('isActive').optional().isBoolean(),
+  body('isFeatured').optional().isBoolean(),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -151,22 +185,10 @@ router.put('/:id', [
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    // Check if user has permission to update this product
-    if (req.user.role === 'shop_owner') {
-      const shop = await Shop.findById(product.shop);
-      if (!shop || shop.owner.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ message: 'Access denied' });
-      }
-    }
-
     Object.assign(product, req.body);
     await product.save();
 
-    const updatedProduct = await Product.findById(product._id)
-      .populate('shop', 'name logo')
-      .populate('category', 'name');
-
-    res.json(updatedProduct);
+    res.json(product);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -178,14 +200,6 @@ router.delete('/:id', authenticateToken, requirePermission('product:delete'), as
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
-    }
-
-    // Check if user has permission to delete this product
-    if (req.user.role === 'shop_owner') {
-      const shop = await Shop.findById(product.shop);
-      if (!shop || shop.owner.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ message: 'Access denied' });
-      }
     }
 
     await Product.findByIdAndDelete(req.params.id);
@@ -201,14 +215,6 @@ router.patch('/:id/toggle-status', authenticateToken, requirePermission('product
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
-    }
-
-    // Check if user has permission to update this product
-    if (req.user.role === 'shop_owner') {
-      const shop = await Shop.findById(product.shop);
-      if (!shop || shop.owner.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ message: 'Access denied' });
-      }
     }
 
     product.isActive = !product.isActive;
