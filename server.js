@@ -18,6 +18,8 @@ const orderRoutes = require('./routes/orders');
 const categoryRoutes = require('./routes/categories');
 const shopRoutes = require('./routes/shops');
 const settingsRoutes = require('./routes/settings');
+const brandRoutes = require('./routes/brands');
+const productCategoryRoutes = require('./routes/productCategories');
 
 // Security middleware
 app.use(helmet());
@@ -61,6 +63,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/brands', brandRoutes);
+app.use('/api/product-categories', productCategoryRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -100,4 +104,4 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bharatmar
     process.exit(1);
   });
 
-module.exports = app; 
+module.exports = app;

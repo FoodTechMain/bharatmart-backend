@@ -2,6 +2,8 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Product = require('../models/Product');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
+const Brand = require('../models/Brand');
+const ProductCategory = require('../models/ProductCategory');
 
 const router = express.Router();
 
@@ -125,6 +127,21 @@ router.post('/', [
     }
     const product = new Product(req.body);
     await product.save();
+    // After product.save();
+    if (req.body.brand) {
+      await Brand.updateOne(
+        { name: req.body.brand },
+        { name: req.body.brand },
+        { upsert: true }
+      );
+    }
+    if (req.body.category) {
+      await ProductCategory.updateOne(
+        { name: req.body.category },
+        { name: req.body.category },
+        { upsert: true }
+      );
+    }
     res.status(201).json(product);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
