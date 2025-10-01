@@ -72,6 +72,11 @@ const requirePermission = (permission) => {
       });
     }
 
+    // Superadmin bypass - always allow
+    if (req.user.role === 'superadmin') {
+      return next();
+    }
+
     if (!req.user.hasPermission(permission)) {
       return res.status(403).json({ 
         message: 'Insufficient permissions',
@@ -261,4 +266,4 @@ module.exports = {
   requireShopOwner,
   requireShopOwnership,
   optionalAuth
-}; 
+};
