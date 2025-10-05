@@ -75,6 +75,10 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Mount home route (polished welcome page)
+const homeRoutes = require('./routes/home');
+app.use('/', homeRoutes);
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
