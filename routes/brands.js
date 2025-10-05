@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const Brand = require('../models/Brand');
+const Manufacturer = require('../models/Manufacturer');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
 const Product = require('../models/Product');
 const mongoose = require('mongoose');
@@ -36,7 +36,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-    const brands = await Brand.find(query)
+    const brands = await Manufacturer.find(query)
       .populate('category', 'name')
       .sort(sortOptions)
       .limit(limit * 1)
@@ -50,7 +50,7 @@ router.get('/', authenticateToken, async (req, res) => {
       category: brand.category || { name: 'Uncategorized' }
     }));
 
-    const total = await Brand.countDocuments(query);
+  const total = await Manufacturer.countDocuments(query);
 
     res.json({
       data: {
@@ -68,7 +68,7 @@ router.get('/', authenticateToken, async (req, res) => {
 // Get brand statistics
 router.get('/stats', authenticateToken, requirePermission('brand:read'), async (req, res) => {
   try {
-    const stats = await Brand.aggregate([
+  const stats = await Manufacturer.aggregate([
       {
         $group: {
           _id: null,
@@ -120,8 +120,8 @@ router.post('/', [
       delete req.body.category; // Remove empty category field
     }
 
-    const brand = new Brand(req.body);
-    await brand.save();
+  const brand = new Manufacturer(req.body);
+  await brand.save();
 
     res.status(201).json({ 
       message: 'Brand created successfully',
@@ -155,7 +155,7 @@ router.put('/:id', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const brand = await Brand.findByIdAndUpdate(
+    const brand = await Manufacturer.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },
       { new: true, runValidators: true }
@@ -174,14 +174,14 @@ router.put('/:id', [
 // Delete brand
 router.delete('/:id', authenticateToken, requirePermission('brand:delete'), async (req, res) => {
   try {
-    const productsCount = await Product.countDocuments({ brand: req.params.id });
+  const productsCount = await Product.countDocuments({ manufacturer: req.params.id });
     if (productsCount > 0) {
       return res.status(400).json({ 
         message: 'Cannot delete brand with associated products' 
       });
     }
 
-    const brand = await Brand.findByIdAndDelete(req.params.id);
+  const brand = await Manufacturer.findByIdAndDelete(req.params.id);
     if (!brand) {
       return res.status(404).json({ message: 'Brand not found' });
     }
@@ -198,7 +198,7 @@ router.delete('/:id', authenticateToken, requirePermission('brand:delete'), asyn
 // Toggle brand status
 router.patch('/:id/toggle-status', authenticateToken, requirePermission('brand:write'), async (req, res) => {
   try {
-    const brand = await Brand.findById(req.params.id);
+  const brand = await Manufacturer.findById(req.params.id);
     if (!brand) {
       return res.status(404).json({ message: 'Brand not found' });
     }
@@ -224,7 +224,7 @@ router.patch('/bulk/status', authenticateToken, requirePermission('brand:write')
       return res.status(400).json({ message: 'Brand IDs array is required' });
     }
 
-    const result = await Brand.updateMany(
+    const result = await Manufacturer.updateMany(
       { _id: { $in: brandIds } },
       { isActive }
     );

@@ -2,10 +2,10 @@ const mongoose = require('mongoose');
 
 const ProductSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  brand: {
+  manufacturer: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Brand',
-    required: true
+    ref: 'Manufacturer',
+    required: false
   },
   category: { type: String, required: true }, // Now a string, not ObjectId
   sku: { type: String, required: true, unique: true },
@@ -27,7 +27,7 @@ const ProductSchema = new mongoose.Schema({
     unit: { type: String }
   },
   expiryDate: { type: Date },
-  manufacturer: { type: String },
+  // manufacturer field is stored as an ObjectId reference to Manufacturer model
   hsn: { type: String },
   gst: { type: Number },
   minOrderQty: { type: Number },

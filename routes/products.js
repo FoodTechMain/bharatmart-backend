@@ -2,7 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Product = require('../models/Product');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
-const Brand = require('../models/Brand');
+const Manufacturer = require('../models/Manufacturer');
 const ProductCategory = require('../models/ProductCategory');
 
 const router = express.Router();
@@ -36,8 +36,7 @@ router.get('/', authenticateToken, async (req, res) => {
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { brand: { $regex: search, $options: 'i' } }
+        { description: { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -88,7 +87,7 @@ router.post('/', [
   body('price.sale').optional().isFloat({ min: 0 }).withMessage('Sale price must be a positive number'),
   body('price.cost').optional().isFloat({ min: 0 }).withMessage('Cost price must be a positive number'),
   body('category').isString().withMessage('Category is required'),
-  body('brand').isString().withMessage('Brand is required'),
+  body('manufacturer').optional().isString(),
   body('sku').optional().isString(),
   body('barcode').optional().isString(),
   body('mrp').isFloat({ min: 0 }).withMessage('MRP is required'),
@@ -128,10 +127,11 @@ router.post('/', [
     const product = new Product(req.body);
     await product.save();
     // After product.save();
-    if (req.body.brand) {
-      await Brand.updateOne(
-        { name: req.body.brand },
-        { name: req.body.brand },
+    if (req.body.manufacturer || req.body.brand) {
+      const name = req.body.manufacturer || req.body.brand;
+      await Manufacturer.updateOne(
+        { name },
+        { name },
         { upsert: true }
       );
     }
@@ -158,7 +158,7 @@ router.put('/:id', [
   body('price.sale').optional().isFloat({ min: 0 }).withMessage('Sale price must be a positive number'),
   body('price.cost').optional().isFloat({ min: 0 }).withMessage('Cost price must be a positive number'),
   body('category').optional().isString(),
-  body('brand').optional().isString(),
+  body('manufacturer').optional().isString(),
   body('sku').optional().isString(),
   body('barcode').optional().isString(),
   body('mrp').optional().isFloat({ min: 0 }),

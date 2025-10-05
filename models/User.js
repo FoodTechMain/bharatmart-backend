@@ -154,14 +154,14 @@ userSchema.methods.getPermissions = function() {
       'order:read', 'order:write', 'order:delete',
       'category:read', 'category:write', 'category:delete',
       'shop:read', 'shop:write', 'shop:delete',
-      'brand:read', 'brand:write', 'brand:delete', // Add brand permissions
+  'manufacturer:read', 'manufacturer:write', 'manufacturer:delete', // Add manufacturer permissions
       'analytics:read', 'settings:write'
     ],
     shop_owner: [
       'product:read', 'product:write', 'product:delete',
       'order:read', 'order:write',
       'shop:read', 'shop:write',
-      'brand:read', // Shop owners can only read brands
+  'manufacturer:read', // Shop owners can only read manufacturers
       'analytics:read'
     ],
     customer: [
