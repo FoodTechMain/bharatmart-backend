@@ -87,6 +87,7 @@ router.post('/', [
   requirePermission('manufacturer:write'),
   body('name').trim().isLength({ min: 2 }).withMessage('Manufacturer name must be at least 2 characters'),
   body('contactPerson').trim().isLength({ min: 3 }).withMessage('Contact person name is required'),
+  // Accept any 10-digit phone number (e.g. 9123456789)
   body('phone').matches(/^[0-9]{10}$/).withMessage('Valid 10-digit phone number is required'),
   body('email').isEmail().withMessage('Valid email is required'),
   body('category').custom(value => {
@@ -118,7 +119,8 @@ router.put('/:id', [
   body('name').optional().trim().isLength({ min: 2 }),
   body('category').optional().isMongoId(),
   body('contactPerson').optional().trim().isLength({ min: 3 }),
-  body('phone').optional().matches(/^[0-9]{10}$/),
+  // Accept any 10-digit phone number on updates as well
+  body('phone').optional().matches(/^[0-9]{10}$/).withMessage('Valid 10-digit phone number is required'),
   body('email').optional().isEmail(),
   body('website').optional().isURL(),
   body('address').optional().isObject(),
