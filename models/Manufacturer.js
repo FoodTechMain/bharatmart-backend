@@ -12,7 +12,7 @@ const manufacturerSchema = new mongoose.Schema({
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
+    ref: 'ManufacturerCategory',
     default: null
   },
   logo: {
