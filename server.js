@@ -19,8 +19,9 @@ const categoryRoutes = require('./routes/categories');
 const shopRoutes = require('./routes/shops');
 const settingsRoutes = require('./routes/settings');
 const manufacturersRoutes = require('./routes/manufacturers');
-const productCategoryRoutes = require('./routes/productCategories');
 const manufacturerCategoryRoutes = require('./routes/manufacturerCategories');
+const productCategoryRoutes = require('./routes/productCategories');
+
 
 
 // Security middleware
@@ -68,6 +69,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/manufacturers', manufacturersRoutes);
 app.use('/api/product-categories', productCategoryRoutes);
 app.use('/api/manufacturer-categories', manufacturerCategoryRoutes);
+app.use('/api/product-categories', productCategoryRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
