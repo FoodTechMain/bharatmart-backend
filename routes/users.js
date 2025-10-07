@@ -131,7 +131,10 @@ router.put('/:id', [
       }
     }
 
-    Object.assign(user, req.body);
+    // Exclude password from general update - password should be updated via separate endpoint
+    const { password, ...updateData } = req.body;
+    
+    Object.assign(user, updateData);
     await user.save();
 
     const userResponse = user.toJSON();
