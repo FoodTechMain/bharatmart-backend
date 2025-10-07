@@ -21,6 +21,7 @@ const settingsRoutes = require('./routes/settings');
 const manufacturersRoutes = require('./routes/manufacturers');
 const manufacturerCategoryRoutes = require('./routes/manufacturerCategories');
 const productCategoryRoutes = require('./routes/productCategories');
+const franchiseRoutes = require('./routes/Franchise');
 
 
 
@@ -69,7 +70,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/manufacturers', manufacturersRoutes);
 app.use('/api/product-categories', productCategoryRoutes);
 app.use('/api/manufacturer-categories', manufacturerCategoryRoutes);
-app.use('/api/product-categories', productCategoryRoutes);
+app.use('/api/franchises', franchiseRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
