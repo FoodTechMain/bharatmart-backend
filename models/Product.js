@@ -33,7 +33,7 @@ const ProductSchema = new mongoose.Schema({
   minOrderQty: { type: Number },
   maxOrderQty: { type: Number },
   shortDescription: { type: String },
-  description: { type: String, required: true },
+  description: { type: String, default: '' },
   images: [{
     url: { type: String },
     alt: { type: String },

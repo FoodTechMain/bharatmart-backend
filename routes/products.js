@@ -1,7 +1,8 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const Product = require('../models/Product');
+const mongoose = require('mongoose');
 const { authenticateToken, requirePermission } = require('../middleware/auth');
+const Product = require('../models/Product');
 const Manufacturer = require('../models/Manufacturer');
 const ProductCategory = require('../models/ProductCategory');
 
@@ -77,74 +78,96 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Create new product
+// Create new product (minimal required fields: name, category, manufacturer)
 router.post('/', [
   authenticateToken,
   requirePermission('product:write'),
   body('name').trim().isLength({ min: 3 }).withMessage('Product name must be at least 3 characters'),
-  body('description').trim().isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
-  body('price.regular').isFloat({ min: 0 }).withMessage('Regular price must be a positive number'),
-  body('price.sale').optional().isFloat({ min: 0 }).withMessage('Sale price must be a positive number'),
-  body('price.cost').optional().isFloat({ min: 0 }).withMessage('Cost price must be a positive number'),
-  body('category').isString().withMessage('Category is required'),
-  body('manufacturer').optional().isString(),
-  body('sku').optional().isString(),
-  body('barcode').optional().isString(),
-  body('mrp').isFloat({ min: 0 }).withMessage('MRP is required'),
-  body('weight').custom(val => {
-    if (!val || typeof val !== 'object' || !val.value || !val.unit) throw new Error('Weight is required');
-    if (isNaN(val.value) || val.value <= 0) throw new Error('Weight value must be positive');
-    if (typeof val.unit !== 'string') throw new Error('Weight unit is required');
+  body('category').trim().isLength({ min: 1 }).withMessage('Category is required'),
+  body('manufacturer').custom((val, { req }) => {
+    // allow manufacturer to be a string id/name or an object with _id or name
+    if (!val && !req.body.customManufacturer) {
+      throw new Error('Manufacturer is required');
+    }
     return true;
   }),
-  body('dimensions').optional().custom(val => {
-    if (!val) return true;
-    if (typeof val !== 'object') throw new Error('Dimensions must be an object');
-    if (val.length && (isNaN(val.length) || val.length < 0)) throw new Error('Invalid length');
-    if (val.width && (isNaN(val.width) || val.width < 0)) throw new Error('Invalid width');
-    if (val.height && (isNaN(val.height) || val.height < 0)) throw new Error('Invalid height');
-    if (val.unit && typeof val.unit !== 'string') throw new Error('Invalid unit');
-    return true;
-  }),
-  body('manufacturer').optional().isString(),
-  body('hsn').optional().isString(),
-  body('gst').optional().isFloat({ min: 0 }),
-  body('minOrderQty').optional().isInt({ min: 0 }),
-  body('maxOrderQty').optional().isInt({ min: 0 }),
-  body('inventory.quantity').isInt({ min: 0 }).withMessage('Quantity must be a non-negative integer'),
-  body('inventory.lowStockThreshold').optional().isInt({ min: 0 }),
-  body('inventory.trackInventory').optional().isBoolean(),
-  body('shortDescription').optional().isString(),
-  body('seo').optional().isObject(),
-  body('isActive').optional().isBoolean(),
-  body('isFeatured').optional().isBoolean(),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
-    const product = new Product(req.body);
+
+    // Log incoming payload for debugging
+    console.log('POST /api/products payload:', JSON.stringify(req.body, null, 2));
+
+    const payload = { ...req.body };
+
+    // Normalize manufacturer if object (frontend may send object)
+    if (payload.manufacturer && typeof payload.manufacturer === 'object') {
+      if (payload.manufacturer._id) payload.manufacturer = String(payload.manufacturer._id);
+      else if (payload.manufacturer.name) payload.manufacturer = String(payload.manufacturer.name);
+      else payload.manufacturer = '';
+    }
+
+    // normalize numeric fields and defaults so Product schema required fields are satisfied
+    payload.mrp = payload.mrp !== undefined ? Number(payload.mrp) : 0;
+    payload.price = payload.price || {};
+    payload.price.regular = payload.price.regular !== undefined ? Number(payload.price.regular) : payload.mrp || 0;
+    if (payload.price.sale !== undefined) payload.price.sale = Number(payload.price.sale);
+    if (payload.price.cost !== undefined) payload.price.cost = Number(payload.price.cost);
+
+    // weight default (schema requires value and unit)
+    if (!payload.weight || typeof payload.weight !== 'object') {
+      payload.weight = { value: 0, unit: 'g' };
+    } else {
+      payload.weight.value = Number(payload.weight.value || 0);
+      payload.weight.unit = payload.weight.unit || 'g';
+    }
+
+    // dimensions optional - normalize numbers
+    if (payload.dimensions && typeof payload.dimensions === 'object') {
+      if (payload.dimensions.length !== undefined) payload.dimensions.length = Number(payload.dimensions.length);
+      if (payload.dimensions.width !== undefined) payload.dimensions.width = Number(payload.dimensions.width);
+      if (payload.dimensions.height !== undefined) payload.dimensions.height = Number(payload.dimensions.height);
+    }
+
+    // inventory defaults
+    payload.inventory = payload.inventory || {};
+    payload.inventory.quantity = payload.inventory.quantity !== undefined ? Number(payload.inventory.quantity) : 0;
+    payload.inventory.lowStockThreshold = payload.inventory.lowStockThreshold !== undefined ? Number(payload.inventory.lowStockThreshold) : 10;
+    payload.inventory.trackInventory = payload.inventory.trackInventory !== undefined ? !!payload.inventory.trackInventory : true;
+
+    // Ensure required string fields have safe defaults
+    if (payload.description === undefined || payload.description === null) payload.description = '';
+
+    // If manufacturer is a name (not an ObjectId), upsert and replace with _id
+    if (payload.manufacturer && !mongoose.Types.ObjectId.isValid(payload.manufacturer)) {
+      const name = String(payload.manufacturer).trim();
+      let existing = await Manufacturer.findOne({ name });
+      if (!existing) {
+        existing = new Manufacturer({
+          name,
+          contactPerson: 'Default Contact',
+          phone: '0000000000',
+          email: 'default@example.com'
+        });
+        await existing.save();
+      }
+      payload.manufacturer = existing._id;
+    }
+
+    // Ensure product category exists in ProductCategory collection (upsert)
+    if (payload.category) {
+      await ProductCategory.updateOne({ name: payload.category }, { name: payload.category }, { upsert: true });
+    }
+
+    const product = new Product(payload);
     await product.save();
-    // After product.save();
-    if (req.body.manufacturer || req.body.brand) {
-      const name = req.body.manufacturer || req.body.brand;
-      await Manufacturer.updateOne(
-        { name },
-        { name },
-        { upsert: true }
-      );
-    }
-    if (req.body.category) {
-      await ProductCategory.updateOne(
-        { name: req.body.category },
-        { name: req.body.category },
-        { upsert: true }
-      );
-    }
     res.status(201).json(product);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('POST /api/products error:', error);
+    res.status(500).json({ message: 'Server error', error: process.env.NODE_ENV === 'development' ? error.stack : error.message });
   }
 });
 
@@ -153,48 +176,31 @@ router.put('/:id', [
   authenticateToken,
   requirePermission('product:write'),
   body('name').optional().trim().isLength({ min: 3 }).withMessage('Product name must be at least 3 characters'),
-  body('description').optional().trim().isLength({ min: 10 }).withMessage('Description must be at least 10 characters'),
-  body('price.regular').optional().isFloat({ min: 0 }).withMessage('Regular price must be a positive number'),
-  body('price.sale').optional().isFloat({ min: 0 }).withMessage('Sale price must be a positive number'),
-  body('price.cost').optional().isFloat({ min: 0 }).withMessage('Cost price must be a positive number'),
   body('category').optional().isString(),
-  body('manufacturer').optional().isString(),
-  body('sku').optional().isString(),
-  body('barcode').optional().isString(),
-  body('mrp').optional().isFloat({ min: 0 }),
-  body('weight').optional().custom(val => {
-    if (!val) return true;
-    if (typeof val !== 'object' || !val.value || !val.unit) throw new Error('Weight is required');
-    if (isNaN(val.value) || val.value <= 0) throw new Error('Weight value must be positive');
-    if (typeof val.unit !== 'string') throw new Error('Weight unit is required');
-    return true;
-  }),
-  body('dimensions').optional().custom(val => {
-    if (!val) return true;
-    if (typeof val !== 'object') throw new Error('Dimensions must be an object');
-    if (val.length && (isNaN(val.length) || val.length < 0)) throw new Error('Invalid length');
-    if (val.width && (isNaN(val.width) || val.width < 0)) throw new Error('Invalid width');
-    if (val.height && (isNaN(val.height) || val.height < 0)) throw new Error('Invalid height');
-    if (val.unit && typeof val.unit !== 'string') throw new Error('Invalid unit');
-    return true;
-  }),
-  body('manufacturer').optional().isString(),
-  body('hsn').optional().isString(),
-  body('gst').optional().isFloat({ min: 0 }),
-  body('minOrderQty').optional().isInt({ min: 0 }),
-  body('maxOrderQty').optional().isInt({ min: 0 }),
-  body('inventory.quantity').optional().isInt({ min: 0 }).withMessage('Quantity must be a non-negative integer'),
-  body('inventory.lowStockThreshold').optional().isInt({ min: 0 }),
-  body('inventory.trackInventory').optional().isBoolean(),
-  body('shortDescription').optional().isString(),
-  body('seo').optional().isObject(),
-  body('isActive').optional().isBoolean(),
-  body('isFeatured').optional().isBoolean(),
+  body('manufacturer').optional().trim(),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
+    }
+
+    console.log('PUT /api/products payload:', JSON.stringify(req.body, null, 2));
+
+    // If manufacturer provided as name (not ObjectId), upsert and replace with id
+    if (req.body.manufacturer && !mongoose.Types.ObjectId.isValid(req.body.manufacturer)) {
+      const name = req.body.manufacturer.trim();
+      let existing = await Manufacturer.findOne({ name });
+      if (!existing) {
+        existing = new Manufacturer({ name });
+        await existing.save();
+      }
+      req.body.manufacturer = existing._id;
+    }
+
+    // If category provided, ensure it exists in ProductCategory
+    if (req.body.category) {
+      await ProductCategory.updateOne({ name: req.body.category }, { name: req.body.category }, { upsert: true });
     }
 
     const product = await Product.findById(req.params.id);
@@ -207,7 +213,8 @@ router.put('/:id', [
 
     res.json(product);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('PUT /api/products error:', error);
+    res.status(500).json({ message: 'Server error', error: process.env.NODE_ENV === 'development' ? error.stack : error.message });
   }
 });
 
