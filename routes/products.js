@@ -15,6 +15,7 @@ router.get('/', authenticateToken, async (req, res) => {
       page = 1, 
       limit = 10, 
       category, 
+      manufacturer,
       search, 
       minPrice, 
       maxPrice,
@@ -26,6 +27,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const query = { isActive: true };
     
     if (category) query.category = category;
+    if (manufacturer) query.manufacturer = manufacturer;
     if (minPrice || maxPrice) {
       query.price = {};
       if (minPrice) query.price.$gte = parseFloat(minPrice);
