@@ -48,6 +48,7 @@ router.get('/', authenticateToken, async (req, res) => {
       .sort(sortOptions)
       .limit(limit * 1)
       .skip((page - 1) * limit)
+      .populate('manufacturer')
       .exec();
 
     const total = await Product.countDocuments(query);
