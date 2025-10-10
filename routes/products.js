@@ -128,12 +128,7 @@ router.post('/', [
       payload.weight.unit = payload.weight.unit || 'g';
     }
 
-    // dimensions optional - normalize numbers
-    if (payload.dimensions && typeof payload.dimensions === 'object') {
-      if (payload.dimensions.length !== undefined) payload.dimensions.length = Number(payload.dimensions.length);
-      if (payload.dimensions.width !== undefined) payload.dimensions.width = Number(payload.dimensions.width);
-      if (payload.dimensions.height !== undefined) payload.dimensions.height = Number(payload.dimensions.height);
-    }
+    // dimensions removed - no-op
 
     // inventory defaults
     payload.inventory = payload.inventory || {};
@@ -143,6 +138,8 @@ router.post('/', [
 
     // Ensure required string fields have safe defaults
     if (payload.description === undefined || payload.description === null) payload.description = '';
+  // Normalize batchNo if provided
+  if (payload.batchNo !== undefined && payload.batchNo !== null) payload.batchNo = String(payload.batchNo).trim();
 
     // If manufacturer is a name (not an ObjectId), upsert and replace with _id
     if (payload.manufacturer && !mongoose.Types.ObjectId.isValid(payload.manufacturer)) {
@@ -165,11 +162,31 @@ router.post('/', [
       await ProductCategory.updateOne({ name: payload.category }, { name: payload.category }, { upsert: true });
     }
 
+    // normalize batch number if provided
+    if (payload.batchNo !== undefined && payload.batchNo !== null) {
+      payload.batchNo = String(payload.batchNo).trim();
+      if (payload.batchNo === '') delete payload.batchNo;
+    }
+
+    // Ensure SKU uniqueness (case-insensitive) if provided
+    if (payload.sku) {
+      const existingSku = await Product.findOne({ sku: payload.sku }).collation({ locale: 'en', strength: 2 });
+      if (existingSku) {
+        return res.status(400).json({ message: 'SKU must be unique. Another product with this SKU already exists.' });
+      }
+    }
+
     const product = new Product(payload);
     await product.save();
     res.status(201).json(product);
   } catch (error) {
     console.error('POST /api/products error:', error);
+    // Handle duplicate key error (in case index enforces uniqueness)
+    if (error && error.code === 11000) {
+      // find which field caused duplicate
+      const dupKey = Object.keys(error.keyValue || {})[0] || 'field';
+      return res.status(409).json({ message: `${dupKey} already exists and must be unique.` });
+    }
     res.status(500).json({ message: 'Server error', error: process.env.NODE_ENV === 'development' ? error.stack : error.message });
   }
 });
@@ -206,6 +223,17 @@ router.put('/:id', [
       await ProductCategory.updateOne({ name: req.body.category }, { name: req.body.category }, { upsert: true });
     }
 
+    // normalize batchNo in update
+    if (req.body.batchNo !== undefined && req.body.batchNo !== null) req.body.batchNo = String(req.body.batchNo).trim();
+
+    // If SKU is being updated, ensure new SKU is unique (case-insensitive)
+    if (req.body.sku) {
+      const existing = await Product.findOne({ sku: req.body.sku }).collation({ locale: 'en', strength: 2 });
+      if (existing && String(existing._id) !== String(req.params.id)) {
+        return res.status(400).json({ message: 'SKU must be unique. Another product with this SKU already exists.' });
+      }
+    }
+
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
@@ -217,6 +245,10 @@ router.put('/:id', [
     res.json(product);
   } catch (error) {
     console.error('PUT /api/products error:', error);
+    if (error && error.code === 11000) {
+      const dupKey = Object.keys(error.keyValue || {})[0] || 'field';
+      return res.status(409).json({ message: `${dupKey} already exists and must be unique.` });
+    }
     res.status(500).json({ message: 'Server error', error: process.env.NODE_ENV === 'development' ? error.stack : error.message });
   }
 });

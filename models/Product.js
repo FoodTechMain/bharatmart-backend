@@ -8,7 +8,8 @@ const ProductSchema = new mongoose.Schema({
     required: false
   },
   category: { type: String, required: true }, // Now a string, not ObjectId
-  sku: { type: String, required: true, unique: true },
+  sku: { type: String, required: true },
+  batchNo: { type: String },
   barcode: { type: String },
   mrp: { type: Number, required: true },
   price: {
@@ -20,12 +21,7 @@ const ProductSchema = new mongoose.Schema({
     value: { type: Number, required: true },
     unit: { type: String, required: true }
   },
-  dimensions: {
-    length: { type: Number },
-    width: { type: Number },
-    height: { type: Number },
-    unit: { type: String }
-  },
+  // dimensions removed per request
   expiryDate: { type: Date },
   // manufacturer field is stored as an ObjectId reference to Manufacturer model
   hsn: { type: String },
@@ -57,6 +53,9 @@ const ProductSchema = new mongoose.Schema({
     revenue: { type: Number, default: 0 }
   }
 }, { timestamps: true });
+// Create a case-insensitive unique index for SKU
+// This uses a collation to make uniqueness checks case-insensitive
+ProductSchema.index({ sku: 1 }, { unique: true, collation: { locale: 'en', strength: 2 } });
 
 // Optional: Auto-generate SKU if not provided
 ProductSchema.pre('validate', function(next) {
