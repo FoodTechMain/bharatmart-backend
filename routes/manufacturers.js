@@ -96,7 +96,12 @@ router.post('/', [
       throw new Error('Invalid category ID');
     }
     return true;
-  })
+  }),
+  body('bankDetails.accountNumber').optional().isString().trim().matches(/^[0-9]{9,18}$/).withMessage('Account number must be 9-18 digits'),
+  body('bankDetails.ifscCode').optional().isString().trim().matches(/^[A-Z]{4}0[A-Z0-9]{6}$/).withMessage('IFSC code must be in format: BBBB0XXXXXX (4 letters, 0, 6 alphanumeric)'),
+  body('bankDetails.bankName').optional().isString().trim(),
+  body('bankDetails.branch').optional().isString().trim(),
+  body('bankDetails.accountHolderName').optional().isString().trim()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -125,7 +130,12 @@ router.put('/:id', [
   body('website').optional().isURL(),
   body('address').optional().isObject(),
   body('gst').optional().matches(/^[0-9A-Z]{15}$/),
-  body('pan').optional().matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/)
+  body('pan').optional().matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/),
+  body('bankDetails.accountNumber').optional().isString().trim().matches(/^[0-9]{9,18}$/).withMessage('Account number must be 9-18 digits'),
+  body('bankDetails.ifscCode').optional().isString().trim().matches(/^[A-Z]{4}0[A-Z0-9]{6}$/).withMessage('IFSC code must be in format: BBBB0XXXXXX (4 letters, 0, 6 alphanumeric)'),
+  body('bankDetails.bankName').optional().isString().trim(),
+  body('bankDetails.branch').optional().isString().trim(),
+  body('bankDetails.accountHolderName').optional().isString().trim()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);

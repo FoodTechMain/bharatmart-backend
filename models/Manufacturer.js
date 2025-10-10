@@ -71,6 +71,28 @@ const manufacturerSchema = new mongoose.Schema({
   totalRevenue: {
     type: Number,
     default: 0
+  },
+  bankDetails: {
+    accountNumber: {
+      type: String,
+      trim: true
+    },
+    ifscCode: {
+      type: String,
+      trim: true
+    },
+    bankName: {
+      type: String,
+      trim: true
+    },
+    branch: {
+      type: String,
+      trim: true
+    },
+    accountHolderName: {
+      type: String,
+      trim: true
+    }
   }
 }, {
   timestamps: true
