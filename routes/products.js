@@ -119,6 +119,7 @@ router.post('/', [
     payload.price.regular = payload.price.regular !== undefined ? Number(payload.price.regular) : payload.mrp || 0;
     if (payload.price.sale !== undefined) payload.price.sale = Number(payload.price.sale);
     if (payload.price.cost !== undefined) payload.price.cost = Number(payload.price.cost);
+    if (payload.price.wholesale !== undefined) payload.price.wholesale = Number(payload.price.wholesale);
 
     // weight default (schema requires value and unit)
     if (!payload.weight || typeof payload.weight !== 'object') {
@@ -225,6 +226,12 @@ router.put('/:id', [
 
     // normalize batchNo in update
     if (req.body.batchNo !== undefined && req.body.batchNo !== null) req.body.batchNo = String(req.body.batchNo).trim();
+
+    // normalize price fields in update
+    if (req.body.price) {
+      if (req.body.price.retail !== undefined) req.body.price.retail = Number(req.body.price.retail);
+      if (req.body.price.wholesale !== undefined) req.body.price.wholesale = Number(req.body.price.wholesale);
+    }
 
     // If SKU is being updated, ensure new SKU is unique (case-insensitive)
     if (req.body.sku) {

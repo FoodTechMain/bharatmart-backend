@@ -15,7 +15,8 @@ const ProductSchema = new mongoose.Schema({
   price: {
     regular: { type: Number, required: true },
     sale: { type: Number },
-    cost: { type: Number }
+    cost: { type: Number },
+    wholesale: { type: Number }
   },
   weight: {
     value: { type: Number, required: true },
