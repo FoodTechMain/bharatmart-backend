@@ -67,28 +67,22 @@ router.post('/', [
   body('firstName').trim().isLength({ min: 2 }).withMessage('First name must be at least 2 characters'),
   body('lastName').trim().isLength({ min: 2 }).withMessage('Last name must be at least 2 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('role').isIn(['superadmin', 'shop_owner', 'customer']).withMessage('Invalid role'),
   body('phone').optional().isMobilePhone().withMessage('Valid phone number is required'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { email, password, ...userData } = req.body;
+    const { email, ...userData } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User with this email already exists' });
-    }
+    if (existingUser) return res.status(400).json({ message: 'User with this email already exists' });
 
     const user = new User({
       ...userData,
-      email,
-      password
+      email
     });
 
     await user.save();
@@ -189,4 +183,4 @@ router.patch('/:id/toggle-status', authenticateToken, requireSuperAdmin, async (
   }
 });
 
-module.exports = router; 
+module.exports = router;
