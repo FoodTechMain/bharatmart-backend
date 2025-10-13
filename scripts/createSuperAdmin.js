@@ -25,7 +25,7 @@ const createSuperAdmin = async () => {
     const superAdminData = {
       firstName: 'Super',
       lastName: 'Admin',
-      email: 'superadmin@bharatmart.com',
+      email: 'superadmin1@bharatmart.com',
       password: 'superadmin123',
       role: 'superadmin',
       phone: '+91-9876543210',
