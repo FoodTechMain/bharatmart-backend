@@ -1,0 +1,93 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = __importStar(require("mongoose"));
+const franchiseSchema = new mongoose_1.Schema({
+    // Franchise details
+    name: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    description: {
+        type: String,
+        required: true
+    },
+    industry: {
+        type: String,
+        required: true // e.g. "Food", "Retail", "Education"
+    },
+    logo: String,
+    website: String,
+    // Contact details
+    contactPerson: String,
+    designation: String,
+    phone: String,
+    email: String,
+    address: String,
+    // Legal & banking info
+    gst: String,
+    pan: String,
+    bank: {
+        name: String,
+        accountNumber: String,
+        holderName: String,
+        ifscCode: String,
+        branch: String,
+        city: String
+    },
+    // Business info
+    investmentRange: {
+        min: Number,
+        max: Number
+    },
+    roi: Number,
+    establishedYear: Number,
+    totalUnits: Number,
+    // Status
+    isActive: {
+        type: Boolean,
+        default: true
+    },
+    isVerified: {
+        type: Boolean,
+        default: false
+    }
+}, {
+    timestamps: true // This replaces the manual createdAt and updatedAt fields
+});
+const Franchise = mongoose_1.default.model('Franchise', franchiseSchema);
+exports.default = Franchise;
+//# sourceMappingURL=Franchise.js.map
