@@ -1,5 +1,5 @@
 import mongoose, { Document, Model, Schema, Types } from 'mongoose';
-import { ITimestamps, IImage, IWeight, IDimensions } from '../types/common.js';
+import { ITimestamps, IImage, IWeight, IDimensions } from '../types/common';
 
 export interface IFranchiseProduct extends ITimestamps {
   name: string;

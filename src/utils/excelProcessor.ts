@@ -1,6 +1,6 @@
 import XLSX from 'xlsx';
-import { IFranchiseProduct } from '../models/FranchiseProduct.js';
-import { WeightUnit, DimensionUnit, IProductWeight, IProductDimensions } from '../types/mongoose.js';
+import { IFranchiseProduct } from '../models/FranchiseProduct';
+import { WeightUnit, DimensionUnit, IProductWeight, IProductDimensions } from '../types/mongoose';
 
 interface ExcelValidationError {
   row: number;

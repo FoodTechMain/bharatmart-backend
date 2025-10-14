@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-import { AuthRequest, AuthResponse } from '../types/routes.js';
+import { AuthRequest, AuthResponse } from '../types/routes';
 
 router.get('/', (_req: AuthRequest, res: AuthResponse) => {
   res.send(`

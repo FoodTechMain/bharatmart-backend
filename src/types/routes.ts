@@ -1,8 +1,8 @@
 import { Types } from 'mongoose';
 import type { Request as ExpressRequest } from 'express-serve-static-core';
 import type { Response as ExpressResponse } from 'express-serve-static-core';
-import { IUserDocument } from '../models/User.js';
-import { IShopDocument } from '../models/Shop.js';
+import { IUserDocument } from '../models/User';
+import { IShopDocument } from '../models/Shop';
 
 export interface AuthRequest extends ExpressRequest {
   user?: IUserDocument;

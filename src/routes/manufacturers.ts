@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 import { body, validationResult } from 'express-validator';
 import { Types } from 'mongoose';
-import Manufacturer, { IManufacturer } from '../models/Manufacturer.js';
-import Product from '../models/Product.js';
-import { authenticateToken, requirePermission } from '../middleware/auth.js';
-import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes.js';
+import Manufacturer, { IManufacturer } from '../models/Manufacturer';
+import Product from '../models/Product';
+import { authenticateToken, requirePermission } from '../middleware/auth';
+import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes';
 
 interface ManufacturerQuery {
   page?: string;

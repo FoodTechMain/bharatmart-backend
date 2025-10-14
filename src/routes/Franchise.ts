@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 import { body, validationResult, param } from 'express-validator';
-import Franchise, { IFranchise } from '../models/Franchise.js';
-import { authenticateToken, requirePermission, requireSuperAdmin, optionalAuth } from '../middleware/auth.js';
-import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes.js';
+import Franchise, { IFranchise } from '../models/Franchise';
+import { authenticateToken, requirePermission, requireSuperAdmin, optionalAuth } from '../middleware/auth';
+import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes';
 
 interface FranchiseQuery {
   page?: string;

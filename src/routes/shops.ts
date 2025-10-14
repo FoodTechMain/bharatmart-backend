@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 import { body, validationResult } from 'express-validator';
-import Shop, { IShop } from '../models/Shop.js';
-import User from '../models/User.js';
-import Category from '../models/Category.js';
-import Product from '../models/Product.js';
-import Order from '../models/Order.js';
-import { authenticateToken, requireSuperAdmin, requireShopOwnership } from '../middleware/auth.js';
-import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes.js';
+import Shop, { IShop } from '../models/Shop';
+import User from '../models/User';
+import Category from '../models/Category';
+import Product from '../models/Product';
+import Order from '../models/Order';
+import { authenticateToken, requireSuperAdmin, requireShopOwnership } from '../middleware/auth';
+import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes';
 
 interface ShopQuery {
   page?: string;

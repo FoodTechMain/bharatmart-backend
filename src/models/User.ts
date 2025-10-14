@@ -1,13 +1,14 @@
 import mongoose, { Document, Model, Schema, Types, CallbackError } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { ITimestamps, IAddress } from '../types/common.js';
+import { ITimestamps, IAddress } from '../types/common';
 
 export interface IUser extends ITimestamps {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   phone?: string;
-  role: 'superadmin' | 'admin' | 'user' | 'staff';
+  role: 'superadmin' | 'admin' | 'user' | 'staff' | 'shop_owner' | 'customer';
   permissions: string[];
   isActive: boolean;
   isVerified: boolean;
@@ -34,7 +35,13 @@ export interface IUserModel extends Model<IUserDocument> {
 }
 
 const userSchema = new Schema<IUserDocument, IUserModel>({
-  name: {
+  firstName: {
+    type: String,
+    trim: true,
+    minlength: 2,
+    maxlength: 50
+  },
+  lastName: {
     type: String,
     trim: true,
     minlength: 2,
@@ -49,7 +56,6 @@ const userSchema = new Schema<IUserDocument, IUserModel>({
   },
   password: {
     type: String,
-    required: true,
     select: false
   },
   phone: {
@@ -59,8 +65,8 @@ const userSchema = new Schema<IUserDocument, IUserModel>({
   },
   role: {
     type: String,
-    enum: ['superadmin', 'admin', 'user', 'staff'],
-    default: 'user'
+    enum: ['superadmin', 'admin', 'user', 'staff', 'shop_owner', 'customer'],
+    default: 'customer'
   },
   permissions: {
     type: [String],

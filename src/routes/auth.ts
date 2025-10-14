@@ -1,10 +1,11 @@
-const express = require('express');
-const router = express.Router();
+import express from 'express';
 import { body, validationResult } from 'express-validator';
-import User, { IUserDocument } from '../models/User.js';
-import { authenticateToken, requirePermission } from '../middleware/auth.js';
-import { sendEmail } from '../utils/email.js';
-import { AuthRequest, AuthResponse, ApiResponse } from '../types/routes.js';
+import User, { IUserDocument } from '../models/User';
+import { authenticateToken, requirePermission } from '../middleware/auth';
+import { sendEmail } from '../utils/email';
+import { AuthRequest, AuthResponse, ApiResponse } from '../types/routes';
+
+const router = express.Router();
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { Types } from 'mongoose';

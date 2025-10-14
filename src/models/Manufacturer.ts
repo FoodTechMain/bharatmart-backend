@@ -1,6 +1,6 @@
 import mongoose, { Document, Model, Schema, Types } from 'mongoose';
-import { ITimestamps } from '../types/common.js';
-import { Sluggable, Addressable } from '../types/mongoose.js';
+import { ITimestamps } from '../types/common';
+import { Sluggable, Addressable } from '../types/mongoose';
 import slugify from 'slugify';
 
 export interface IManufacturer extends ITimestamps, Sluggable, Addressable {

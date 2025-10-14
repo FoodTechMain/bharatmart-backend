@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 import { body, validationResult } from 'express-validator';
-import ManufacturerCategory, { IManufacturerCategory } from '../models/ManufacturerCategory.js';
-import { authenticateToken } from '../middleware/auth.js';
-import { AuthRequest, AuthResponse, ApiResponse } from '../types/routes.js';
+import ManufacturerCategory, { IManufacturerCategory } from '../models/ManufacturerCategory';
+import { authenticateToken } from '../middleware/auth';
+import { AuthRequest, AuthResponse, ApiResponse } from '../types/routes';
 
 // Get all top-level manufacturer categories (main categories)
 router.get('/', async (_req: AuthRequest, res: AuthResponse) => {

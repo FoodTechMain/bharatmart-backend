@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 import { body, validationResult } from 'express-validator';
-import Category, { ICategory } from '../models/Category.js';
-import Product from '../models/Product.js';
-import { authenticateToken, requireSuperAdmin } from '../middleware/auth.js';
-import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes.js';
+import Category, { ICategory } from '../models/Category';
+import Product from '../models/Product';
+import { authenticateToken, requireSuperAdmin } from '../middleware/auth';
+import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes';
 
 interface CategoryQuery {
   page?: string;

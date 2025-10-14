@@ -2,11 +2,11 @@ const express = require('express');
 const router = express.Router();
 import { body, validationResult } from 'express-validator';
 import { Types } from 'mongoose';
-import { authenticateToken, requirePermission } from '../middleware/auth.js';
-import Product, { IProduct } from '../models/Product.js';
-import Manufacturer from '../models/Manufacturer.js';
-import ProductCategory from '../models/ProductCategory.js';
-import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes.js';
+import { authenticateToken, requirePermission } from '../middleware/auth';
+import Product, { IProduct } from '../models/Product';
+import Manufacturer from '../models/Manufacturer';
+import ProductCategory from '../models/ProductCategory';
+import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes';
 
 interface ProductQuery {
   page?: string;

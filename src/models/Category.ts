@@ -1,6 +1,6 @@
 import mongoose, { Document, Model, Schema, Types } from 'mongoose';
-import { ITimestamps } from '../types/common.js';
-import { Sluggable } from '../types/mongoose.js';
+import { ITimestamps } from '../types/common';
+import { Sluggable } from '../types/mongoose';
 import slugify from 'slugify';
 
 export interface ICategory extends ITimestamps, Sluggable {

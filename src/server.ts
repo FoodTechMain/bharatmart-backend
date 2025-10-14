@@ -1,29 +1,29 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const helmet = require('helmet');
-const compression = require('compression');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-const path = require('path');
-const dotenv = require('dotenv');
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
+import path from 'path';
+import dotenv from 'dotenv';
 
-import type { AuthRequest as Request, AuthResponse as Response, AuthNextFunction as NextFunction } from './types/express.js';
+import type { AuthRequest as Request, AuthResponse as Response, AuthNextFunction as NextFunction } from './types/express';
 
 // Import routes
-import authRoutes from './routes/auth.js';
-import userRoutes from './routes/users.js';
-import productRoutes from './routes/products.js';
-import orderRoutes from './routes/orders.js';
-import categoryRoutes from './routes/categories.js';
-import shopRoutes from './routes/shops.js';
-import settingsRoutes from './routes/settings.js';
-import manufacturersRoutes from './routes/manufacturers.js';
-import manufacturerCategoryRoutes from './routes/manufacturerCategories.js';
-import productCategoryRoutes from './routes/productCategories.js';
-import franchiseRoutes from './routes/Franchise.js';
-import franchiseProductRoutes from './routes/franchiseProducts.js';
-import homeRoutes from './routes/home.js';
+import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
+import productRoutes from './routes/products';
+import orderRoutes from './routes/orders';
+import categoryRoutes from './routes/categories';
+import shopRoutes from './routes/shops';
+import settingsRoutes from './routes/settings';
+import manufacturersRoutes from './routes/manufacturers';
+import manufacturerCategoryRoutes from './routes/manufacturerCategories';
+import productCategoryRoutes from './routes/productCategories';
+import franchiseRoutes from './routes/Franchise';
+import franchiseProductRoutes from './routes/franchiseProducts';
+import homeRoutes from './routes/home';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 

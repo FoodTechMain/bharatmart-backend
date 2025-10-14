@@ -1,5 +1,5 @@
 import mongoose, { Document, Model, Schema, Types } from 'mongoose';
-import { ITimestamps, IAddress, ISEO } from '../types/common.js';
+import { ITimestamps, IAddress, ISEO } from '../types/common';
 
 export interface IShopStaffMember {
   user: Types.ObjectId;

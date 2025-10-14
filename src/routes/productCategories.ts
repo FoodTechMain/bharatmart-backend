@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 import { body, validationResult } from 'express-validator';
-import ProductCategory, { IProductCategory } from '../models/ProductCategory.js';
-import { authenticateToken } from '../middleware/auth.js';
-import { AuthRequest, AuthResponse, ApiResponse } from '../types/routes.js';
+import ProductCategory, { IProductCategory } from '../models/ProductCategory';
+import { authenticateToken } from '../middleware/auth';
+import { AuthRequest, AuthResponse, ApiResponse } from '../types/routes';
 
 // GET /product-categories - List all product categories
 router.get('/', async (_req: AuthRequest, res: AuthResponse) => {

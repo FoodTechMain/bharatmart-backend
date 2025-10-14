@@ -1,10 +1,11 @@
-const express = require('express');
-const router = express.Router();
+import express from 'express';
 import { body, validationResult } from 'express-validator';
-import User, { IUser } from '../models/User.js';
+import User, { IUser } from '../models/User';
 type UserRole = 'superadmin' | 'admin' | 'user' | 'staff' | 'shop_owner' | 'customer';
-import { authenticateToken, requireSuperAdmin, requirePermission } from '../middleware/auth.js';
-import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes.js';
+import { authenticateToken, requireSuperAdmin, requirePermission } from '../middleware/auth';
+import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes';
+
+const router = express.Router();
 
 interface UserQuery {
   role?: string;
@@ -66,10 +67,10 @@ router.get('/', authenticateToken, requireSuperAdmin, async (req: AuthRequest, r
 
     const total = await User.countDocuments(query);
 
-    const response: PaginatedResponse<IUser[]> = {
+    const response = {
       success: true,
-      data: users,
-      pagination: {
+      data: {
+        users: users,
         total,
         currentPage: pageNum,
         totalPages: Math.ceil(total / limitNum),

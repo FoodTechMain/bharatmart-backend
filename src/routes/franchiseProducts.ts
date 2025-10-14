@@ -4,14 +4,14 @@ const Request = express.Request;
 import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
 import { body, validationResult, param, query } from 'express-validator';
-import FranchiseProduct, { IFranchiseProduct } from '../models/FranchiseProduct.js';
-import Franchise from '../models/Franchise.js';
-import ExcelProcessor from '../utils/excelProcessor.js';
-import { authenticateToken, requireSuperAdmin, requirePermission } from '../middleware/auth.js';
+import FranchiseProduct, { IFranchiseProduct } from '../models/FranchiseProduct';
+import Franchise from '../models/Franchise';
+import ExcelProcessor from '../utils/excelProcessor';
+import { authenticateToken, requireSuperAdmin, requirePermission } from '../middleware/auth';
 import slugify from 'slugify';
 import XLSX from 'xlsx';
 import fs from 'fs/promises';
-import { AuthRequest, AuthResponse, PaginatedResponse } from '../types/routes.js';
+import { AuthRequest, AuthResponse, PaginatedResponse } from '../types/routes';
 import { Types } from 'mongoose';
 
 // Configure multer for file uploads

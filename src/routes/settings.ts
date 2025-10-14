@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-import Settings, { ISettings } from '../models/Settings.js';
-import { authenticateToken, requireSuperAdmin } from '../middleware/auth.js';
-import { AuthRequest, AuthResponse, ApiResponse } from '../types/routes.js';
+import Settings, { ISettings } from '../models/Settings';
+import { authenticateToken, requireSuperAdmin } from '../middleware/auth';
+import { AuthRequest, AuthResponse, ApiResponse } from '../types/routes';
 
 type SettingsCategory = 'general' | 'ecommerce' | 'users' | 'notifications' | 'security' | 'analytics' | 'system';
 

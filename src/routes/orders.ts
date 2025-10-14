@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 import { body, validationResult } from 'express-validator';
-import Order, { IOrder } from '../models/Order.js';
-import Product from '../models/Product.js';
-import Shop from '../models/Shop.js';
-import { authenticateToken, requirePermission } from '../middleware/auth.js';
-import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes.js';
+import Order, { IOrder } from '../models/Order';
+import Product from '../models/Product';
+import Shop from '../models/Shop';
+import { authenticateToken, requirePermission } from '../middleware/auth';
+import { AuthRequest, AuthResponse, PaginatedResponse, ApiResponse } from '../types/routes';
 
 interface OrderQuery {
   page?: string;

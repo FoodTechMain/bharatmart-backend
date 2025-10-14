@@ -1,6 +1,6 @@
-import { AuthRequest, AuthResponse, AuthNextFunction } from '../types/express.js';
-import User from '../models/User.js';
-import Shop, { IShopStaffMember } from '../models/Shop.js';
+import { AuthRequest, AuthResponse, AuthNextFunction } from '../types/express';
+import User from '../models/User';
+import Shop, { IShopStaffMember } from '../models/Shop';
 import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 
