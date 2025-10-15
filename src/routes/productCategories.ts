@@ -53,4 +53,70 @@ router.post('/', [
   }
 });
 
+// Update a product category
+router.put('/:id', [
+  authenticateToken,
+  body('name').trim().isLength({ min: 2 }).withMessage('Category name must be at least 2 characters')
+], async (req: AuthRequest, res: AuthResponse) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: errors.array()
+      });
+    }
+
+    const category = await ProductCategory.findByIdAndUpdate(
+      req.params.id,
+      { name: req.body.name },
+      { new: true }
+    );
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        error: 'Category not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: category
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      details: (error as Error).message
+    });
+  }
+});
+
+// Delete a product category
+router.delete('/:id', authenticateToken, async (req: AuthRequest, res: AuthResponse) => {
+  try {
+    const category = await ProductCategory.findByIdAndDelete(req.params.id);
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        error: 'Category not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Category deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      details: (error as Error).message
+    });
+  }
+});
+
 export default router;
