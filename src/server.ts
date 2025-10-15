@@ -15,7 +15,7 @@ import { AuthRequest as Request, AuthResponse as Response, AuthNextFunction as N
 // Import routes
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
-// import productRoutes from './routes/products';
+import productRoutes from './routes/products';
 import orderRoutes from './routes/orders';
 import categoryRoutes from './routes/categories';
 import shopRoutes from './routes/shops';
@@ -71,7 +71,7 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-// app.use('/api/products', productRoutes);
+app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/shops', shopRoutes);
