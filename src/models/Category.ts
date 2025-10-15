@@ -93,7 +93,7 @@ const categorySchema = new Schema<ICategoryDocument, ICategoryModel>({
 // Indexes
 categorySchema.index({ parent: 1 });
 categorySchema.index({ path: 1 });
-categorySchema.index({ slug: 1 }, { unique: true });
+// categorySchema.index({ slug: 1 }, { unique: true }); // Commented out to avoid duplicate index warning
 categorySchema.index({ name: 'text', description: 'text' });
 
 // Method to update category path

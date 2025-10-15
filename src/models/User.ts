@@ -100,8 +100,8 @@ const userSchema = new Schema<IUserDocument, IUserModel>({
 });
 
 // Indexes
-userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ phone: 1 }, { sparse: true });
+// userSchema.index({ email: 1 }, { unique: true }); // Duplicate, unique: true already creates index
+// userSchema.index({ phone: 1 }, { sparse: true }); // Duplicate, sparse: true already creates index
 userSchema.index({ role: 1 });
 
 // Pre-save middleware to hash password
