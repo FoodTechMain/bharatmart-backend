@@ -1,4 +1,5 @@
-import express from 'express';
+// import express from 'express';
+const express = require('express');
 import { body, validationResult } from 'express-validator';
 import User, { IUser } from '../models/User';
 type UserRole = 'superadmin' | 'admin' | 'user' | 'staff' | 'shop_owner' | 'customer';

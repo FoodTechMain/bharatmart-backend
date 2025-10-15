@@ -1,4 +1,6 @@
-import express from 'express';
+// import express from 'express';
+// import express from 'express';
+const express = require('express');
 import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -8,22 +10,23 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import dotenv from 'dotenv';
 
-import type { AuthRequest as Request, AuthResponse as Response, AuthNextFunction as NextFunction } from './types/express';
+import { AuthRequest as Request, AuthResponse as Response, AuthNextFunction as NextFunction } from './types/express';
 
 // Import routes
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
-import productRoutes from './routes/products';
+// import productRoutes from './routes/products';
 import orderRoutes from './routes/orders';
 import categoryRoutes from './routes/categories';
 import shopRoutes from './routes/shops';
 import settingsRoutes from './routes/settings';
-import manufacturersRoutes from './routes/manufacturers';
-import manufacturerCategoryRoutes from './routes/manufacturerCategories';
+import vendorCategoryRoutes from './routes/vendorCategories';
 import productCategoryRoutes from './routes/productCategories';
 import franchiseRoutes from './routes/Franchise';
 import franchiseProductRoutes from './routes/franchiseProducts';
 import homeRoutes from './routes/home';
+import vendorsRoutes from './routes/vendors';
+import brandsRoutes from './routes/brands';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
@@ -68,14 +71,15 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/products', productRoutes);
+// app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/settings', settingsRoutes);
-app.use('/api/manufacturers', manufacturersRoutes);
 app.use('/api/product-categories', productCategoryRoutes);
-app.use('/api/manufacturer-categories', manufacturerCategoryRoutes);
+app.use('/api/vendors', vendorsRoutes);
+app.use('/api/brands', brandsRoutes);
+app.use('/api/vendor-categories', vendorCategoryRoutes);
 app.use('/api/franchises', franchiseRoutes);
 app.use('/api/franchise-products', franchiseProductRoutes);
 
@@ -109,8 +113,8 @@ app.use((err: ErrorWithStatus, _req: Request, res: Response, _next: NextFunction
   });
 });
 
-// 404 handler
-app.use('*', (_req: Request, res: Response) => {
+// 404 handler (recommended)
+app.use((_req: Request, res: Response) => {
   res.status(404).json({ 
     success: false,
     error: 'Route not found',

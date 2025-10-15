@@ -1,4 +1,5 @@
-import express from 'express';
+// import express from 'express';
+const express = require('express');
 import { body, validationResult } from 'express-validator';
 import User, { IUserDocument } from '../models/User';
 import { authenticateToken, requirePermission } from '../middleware/auth';
