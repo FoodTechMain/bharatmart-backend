@@ -1,6 +1,6 @@
-const express = require('express');
+import express from 'express';
+import type { Request as CoreRequest } from 'express-serve-static-core';
 const router = express.Router();
-const Request = express.Request;
 import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
 import { body, validationResult, param, query } from 'express-validator';
@@ -16,17 +16,17 @@ import { Types } from 'mongoose';
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination: (_req: Request, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
+  destination: (_req: CoreRequest, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
     cb(null, 'uploads/temp/');
   },
-  filename: (_req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
+  filename: (_req: CoreRequest, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, `products-${uniqueSuffix}${path.extname(file.originalname)}`);
   }
 });
 
-interface MulterRequest extends Request {
-  file: Express.Multer.File;
+interface MulterRequest extends CoreRequest {
+  file?: Express.Multer.File;
 }
 
 const upload = multer({
@@ -34,7 +34,7 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
-  fileFilter: (_req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
+  fileFilter: (_req: CoreRequest, file: Express.Multer.File, cb: FileFilterCallback) => {
     const allowedTypes = ['.xlsx', '.xls', '.csv'];
     const ext = path.extname(file.originalname).toLowerCase();
     

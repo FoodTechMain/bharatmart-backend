@@ -27,6 +27,9 @@ export interface IVendor {
   gst?: string;
   pan?: string;
   
+  // Category reference
+  category?: Types.ObjectId | string;
+  
   // Status
   isActive: boolean;
   isVerified: boolean;
@@ -111,6 +114,10 @@ const vendorSchema = new Schema<IVendorDocument, IVendorModel>({
     uppercase: true,
     sparse: true,
     match: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/
+  },
+  category: {
+    type: Schema.Types.ObjectId,
+    ref: 'VendorCategory'
   },
   isActive: {
     type: Boolean,

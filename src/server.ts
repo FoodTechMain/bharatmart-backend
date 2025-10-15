@@ -10,6 +10,10 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import dotenv from 'dotenv';
 
+// Load environment variables as early as possible so route modules
+// (which may check process.env during module initialization) behave correctly.
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
+
 import { AuthRequest as Request, AuthResponse as Response, AuthNextFunction as NextFunction } from './types/express';
 
 // Import routes
@@ -51,10 +55,13 @@ const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
   : ['http://localhost:3000'];
 
-app.use(cors({
-  origin: corsOrigins,
-  credentials: true
-}));
+// In development allow requests from any origin (CRA may choose a different port like 3001).
+if (process.env.NODE_ENV === 'development') {
+  console.log('[Server] Development mode: enabling permissive CORS for local testing');
+  app.use(cors({ origin: true, credentials: true }));
+} else {
+  app.use(cors({ origin: corsOrigins, credentials: true }));
+}
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

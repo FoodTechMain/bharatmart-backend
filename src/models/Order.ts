@@ -252,7 +252,7 @@ const orderSchema = new Schema<IOrderDocument, IOrderModel>({
 });
 
 // Indexes
-orderSchema.index({ orderNumber: 1 }, { unique: true });
+// orderSchema.index({ orderNumber: 1 }, { unique: true }); // Duplicate, unique: true already creates index
 orderSchema.index({ user: 1 });
 orderSchema.index({ 'items.shop': 1 });
 orderSchema.index({ status: 1 });
