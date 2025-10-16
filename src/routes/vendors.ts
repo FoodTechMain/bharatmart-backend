@@ -5,6 +5,8 @@ import Brand from '../models/Brand';
 import Product from '../models/Product';
 import { authenticateToken, requirePermission } from '../middleware/auth';
 import { AuthRequest, AuthResponse, PaginatedResponse } from '../types/routes';
+// Add this with your other imports
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
@@ -420,6 +422,50 @@ router.get(
       });
     } catch (error) {
       console.error(`[Vendors] Error fetching brands for vendor ${req.params.id}:`, error);
+      res.status(500).json({
+        success: false,
+        error: 'Server error',
+        details: (error as Error).message
+      });
+    }
+  }
+);
+
+// Add this new endpoint right after your existing routes
+// Get all brand owners (vendors with category "brand owner")
+router.get(
+  '/by-category/brand-owners',  // Changed path to avoid conflict with :id route
+  async (req: AuthRequest, res: AuthResponse): Promise<void> => {
+    try {
+      // Find the brand owner category
+      const brandOwnerCategory = await mongoose.model('VendorCategory').findOne({
+        name: { $regex: /^brand owner$/i }  // Case-insensitive search
+      });
+      
+      if (!brandOwnerCategory) {
+        res.json({
+          success: true,
+          data: [],
+          message: 'Brand Owner category not found'
+        });
+        return;
+      }
+      
+      // Get vendors with this category
+      const brandOwners = await mongoose.model('Vendor').find({ 
+        category: brandOwnerCategory._id,
+        isActive: true 
+      })
+      .select('_id name logo')
+      .sort({ name: 1 })
+      .lean();
+      
+      res.json({
+        success: true,
+        data: brandOwners
+      });
+    } catch (error) {
+      console.error('[Vendors] Error fetching brand owners:', error);
       res.status(500).json({
         success: false,
         error: 'Server error',

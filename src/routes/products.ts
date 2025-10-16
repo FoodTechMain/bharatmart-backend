@@ -8,6 +8,18 @@ import { AuthRequest, AuthResponse, PaginatedResponse } from '../types/routes';
 
 const router = express.Router();
 
+// For both POST and PUT handlers, add this helper function
+function cleanFormData(data: any): any {
+  const cleanData = { ...data };
+
+  // Handle empty ObjectId fields
+  if (cleanData.brand === '') {
+    delete cleanData.brand;
+  }
+
+  return cleanData;
+}
+
 // Get all products
 router.get('/', authenticateToken, async (req: AuthRequest, res: AuthResponse) => {
   try {
@@ -112,18 +124,20 @@ router.post(
         });
       }
 
+      const cleanedData = cleanFormData(req.body);
+
       // Ensure product category exists
-      if (req.body.category) {
+      if (cleanedData.category) {
         await ProductCategory.updateOne(
-          { _id: req.body.category },
+          { _id: cleanedData.category },
           {},
           { upsert: false }
         );
       }
 
       // Ensure SKU uniqueness if provided
-      if (req.body.sku) {
-        const existingSku = await Product.findOne({ sku: req.body.sku });
+      if (cleanedData.sku) {
+        const existingSku = await Product.findOne({ sku: cleanedData.sku });
         if (existingSku) {
           return res.status(400).json({
             success: false,
@@ -132,7 +146,7 @@ router.post(
         }
       }
 
-      const product = new Product(req.body);
+      const product = new Product(cleanedData);
       await product.save();
       res.status(201).json({
         success: true,
@@ -181,9 +195,11 @@ router.put(
         });
       }
 
+      const cleanedData = cleanFormData(req.body);
+
       // Ensure SKU uniqueness if updated
-      if (req.body.sku) {
-        const existing = await Product.findOne({ sku: req.body.sku });
+      if (cleanedData.sku) {
+        const existing = await Product.findOne({ sku: cleanedData.sku });
         if (existing && String(existing._id) !== String(req.params.id)) {
           return res.status(400).json({
             success: false,
@@ -200,7 +216,7 @@ router.put(
         });
       }
 
-      Object.assign(product, req.body);
+      Object.assign(product, cleanedData);
       await product.save();
 
       res.json({

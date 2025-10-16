@@ -44,8 +44,10 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   },
   brand: {
     type: Schema.Types.ObjectId,
-    ref: 'Brand'
+    ref: 'Vendor',
+    default: null
   },
+  
   sku: {
     type: String,
     trim: true,
