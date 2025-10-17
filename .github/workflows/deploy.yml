@@ -1,0 +1,66 @@
+name: Build and Push BharatMart Backend Docker Image and deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+        
+      - name: Prepare Env file
+        run: |
+          echo 'MONGODB_URI="${{ secrets.MONGODB_URI }}"' >> .env
+          echo 'JWT_SECRET="${{ secrets.JWT_SECRET }}"' >> .env
+          echo 'JWT_EXPIRES_IN="1h"' >> .env
+          echo 'PORT="5000"' >> .env
+          echo 'NODE_ENV="production"' >> .env
+          echo 'EMAIL_HOST="smtp.gmail.com"' >> .env
+          echo 'EMAIL_PORT="587"' >> .env
+          echo 'EMAIL_USER="${{ secrets.EMAIL_USER }}"' >> .env
+          echo 'EMAIL_PASS="$${{ secrets.EMAIL_PASS }}"' >> .env
+          echo 'EMAIL_FROM="noreply@bharatmart.com"' >> .env
+          echo 'UPLOAD_PATH="./uploads"' >> .env
+          echo 'MAX_FILE_SIZE="5242880"' >> .env
+          echo 'RATE_LIMIT_WINDOW_MS="900000"' >> .env
+          echo 'RATE_LIMIT_MAX_REQUESTS="100"' >> .env
+          echo 'CORS_ORIGIN="https://www.bharatmart.app,https://admin.bharatmart.app,http://localhost:3000,http://localhost:3001,"' >> .env
+          echo 'CORS_METHODS="GET,HEAD,PUT,PATCH,POST,DELETE"' >> .env
+          
+      - name: Build Docker image and push to GHCR
+        run: |
+          echo "${{ secrets.DOCKER_GHCR_TOKEN }}" | docker login ghcr.io -u tapasrwth --password-stdin
+          docker build -t ghcr.io/foodtechmain/bharatmart-backend:latest .
+          docker push ghcr.io/foodtechmain/bharatmart-backend:latest
+          
+      - name: Deploy to EC2
+        env:
+          EC2_KEY: ${{ secrets.EC2_KEY }}
+          EC2_IP:  ${{ vars.EC2_IP }}
+        run: |
+          echo "${{ secrets.EC2_KEY }}" > ec2_key.pem
+          chmod 600 ec2_key.pem
+          ssh -i ec2_key.pem -o StrictHostKeyChecking=no ec2-user@${EC2_IP} << 'EOF'
+            echo "${{ secrets.DOCKER_GHCR_TOKEN }}" | docker login ghcr.io -u tapasrwth --password-stdin
+            docker stop bharatmart-backend || true
+            docker rm bharatmart-backend || true
+            docker pull ghcr.io/foodtechmain/bharatmart-backend:latest
+            docker run --restart=always -d --name bharatmart-backend -p 5000:5000 ghcr.io/foodtechmain/bharatmart-backend:latest
+          EOF
+          
+      - name: Clean up
+        run: |
+          docker logout ghcr.io
+          docker rmi ghcr.io/foodtechmain/bharatmart-backend:latest || true
