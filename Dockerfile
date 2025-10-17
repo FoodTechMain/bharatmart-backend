@@ -8,8 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install dependencies (including dev dependencies for build)
-RUN npm ci --only=production --silent
+# Install all dependencies (including dev dependencies for build)
+RUN npm install
 
 # Copy source code
 COPY src/ ./src/
