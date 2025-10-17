@@ -3,13 +3,15 @@ const router = express.Router();
 import { AuthRequest, AuthResponse } from '../types/routes';
 
 router.get('/', (_req: AuthRequest, res: AuthResponse) => {
-  res.send(`
+  // Only show detailed API docs in development
+  if (process.env.NODE_ENV === 'development') {
+    res.send(`
     <!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>BharatMart API</title>
+      <title>BharatMart API - Development</title>
       <style>
         body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -107,6 +109,15 @@ router.get('/', (_req: AuthRequest, res: AuthResponse) => {
     </body>
     </html>
   `);
+  } else {
+    // Production response - minimal info
+    res.json({
+      message: 'BharatMart API',
+      version: '1.0.0',
+      status: 'running',
+      environment: 'production'
+    });
+  }
 });
 
 export default router;

@@ -99,6 +99,60 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
+// API Documentation - Only available in development
+if (process.env.NODE_ENV === 'development') {
+  app.get('/api/docs', (_req: Request, res: Response) => {
+    res.json({
+      message: 'API Documentation',
+      environment: 'development',
+      endpoints: {
+        auth: {
+          'POST /api/auth/register': 'Register a new user',
+          'POST /api/auth/login': 'Login user and get token'
+        },
+        products: {
+          'GET /api/products': 'Get all products with pagination',
+          'GET /api/products/:id': 'Get product by ID',
+          'POST /api/products': 'Create new product (admin)',
+          'PUT /api/products/:id': 'Update product (admin)',
+          'DELETE /api/products/:id': 'Delete product (admin)'
+        },
+        users: {
+          'GET /api/users': 'Get all users (admin)',
+          'GET /api/users/:id': 'Get user by ID',
+          'PUT /api/users/:id': 'Update user',
+          'DELETE /api/users/:id': 'Delete user (admin)'
+        },
+        orders: {
+          'GET /api/orders': 'Get user orders',
+          'POST /api/orders': 'Create new order',
+          'GET /api/orders/:id': 'Get order by ID',
+          'PUT /api/orders/:id': 'Update order status (admin)'
+        },
+        shops: {
+          'GET /api/shops': 'Get all shops',
+          'GET /api/shops/:id': 'Get shop by ID',
+          'POST /api/shops': 'Create shop (admin)',
+          'PUT /api/shops/:id': 'Update shop (admin)'
+        },
+        categories: {
+          'GET /api/categories': 'Get all categories',
+          'POST /api/categories': 'Create category (admin)',
+          'PUT /api/categories/:id': 'Update category (admin)'
+        }
+      },
+      authentication: {
+        type: 'Bearer Token',
+        header: 'Authorization: Bearer <token>',
+        note: 'Include the token in the Authorization header for protected routes'
+      },
+      baseUrl: process.env.NODE_ENV === 'production' 
+        ? 'https://api.bharatmart.com' 
+        : `http://localhost:${process.env.PORT || 5000}`
+    });
+  });
+}
+
 // Mount home route (polished welcome page)
 app.use('/', homeRoutes);
 
