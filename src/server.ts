@@ -28,6 +28,7 @@ import vendorCategoryRoutes from './routes/vendorCategories';
 import productCategoryRoutes from './routes/productCategories';
 import franchiseRoutes from './routes/Franchise';
 import franchiseProductRoutes from './routes/franchiseProducts';
+import franchiseApplicationRoutes from './routes/FranchiseApplications';
 import homeRoutes from './routes/home';
 import vendorsRoutes from './routes/vendors';
 import brandsRoutes from './routes/brands';
@@ -77,6 +78,7 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/franchise-applications', franchiseApplicationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
