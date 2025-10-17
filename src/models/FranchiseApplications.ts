@@ -1,5 +1,17 @@
 import mongoose from 'mongoose';
 
+// Add new interface for admin management data
+interface AdminManagement {
+  cityManager?: string;
+  storeInspector?: string;
+  franchiseModel?: 'FOCO' | 'FOFO' | 'undecided';
+  loanRequired?: boolean;
+  numberOfFranchises?: number;
+  currentStatus?: string;
+  lastUpdatedBy?: string;
+  lastUpdatedAt?: Date;
+}
+
 const franchiseApplicationSchema = new mongoose.Schema({
   // Personal Information
   fullName: {
@@ -80,6 +92,43 @@ const franchiseApplicationSchema = new mongoose.Schema({
   message: {
     type: String,
     trim: true
+  },
+
+  // Admin Management Information
+  adminManagement: {
+    cityManager: {
+      type: String,
+      default: 'Unassigned'
+    },
+    storeInspector: {
+      type: String,
+      default: 'Unassigned'
+    },
+    franchiseModel: {
+      type: String,
+      enum: ['FOCO', 'FOFO', 'undecided'],
+      default: 'undecided'
+    },
+    loanRequired: {
+      type: Boolean,
+      default: false
+    },
+    numberOfFranchises: {
+      type: Number,
+      default: 1,
+      min: 1
+    },
+    currentStatus: {
+      type: String,
+      default: 'Initial Review Pending'
+    },
+    lastUpdatedBy: {
+      type: String
+    },
+    lastUpdatedAt: {
+      type: Date,
+      default: Date.now
+    }
   },
 
   // Metadata
