@@ -1,4 +1,5 @@
 import mongoose, { Schema, Model } from 'mongoose';
+import bcrypt from 'bcryptjs';
 import { BaseDocument } from '../types/common';
 
 export interface IFranchiseBank {
@@ -44,9 +45,15 @@ export interface IFranchise extends BaseDocument {
   // Status
   isActive: boolean;
   isVerified: boolean;
+  
+  // Authentication
+  password?: string;
+  mustChangePassword?: boolean;
 }
 
-interface IFranchiseModel extends Model<IFranchise> {}
+interface IFranchiseModel extends Model<IFranchise> {
+  comparePassword(candidatePassword: string, hashedPassword: string): Promise<boolean>;
+}
 
 const franchiseSchema = new Schema<IFranchise>({
   // Franchise details
@@ -102,10 +109,23 @@ const franchiseSchema = new Schema<IFranchise>({
   isVerified: {
     type: Boolean,
     default: false
+  },
+  password: {
+    type: String,
+    select: false
+  },
+  mustChangePassword: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true // This replaces the manual createdAt and updatedAt fields
 });
+
+// Password comparison method
+franchiseSchema.statics.comparePassword = async function(candidatePassword: string, hashedPassword: string): Promise<boolean> {
+  return bcrypt.compare(candidatePassword, hashedPassword);
+};
 
 const Franchise = mongoose.model<IFranchise, IFranchiseModel>('Franchise', franchiseSchema);
 export default Franchise;

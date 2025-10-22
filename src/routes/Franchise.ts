@@ -1,5 +1,41 @@
-const express = require('express');
+import express from 'express';
+import nodemailer from 'nodemailer';
+import bcrypt from 'bcryptjs';
 const router = express.Router();
+
+// Function to generate secure 6-digit password with mixed characters
+function generateSecurePassword(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const symbols = '!@#$%^&*';
+  
+  let password = '';
+  
+  // Ensure at least one of each type
+  password += chars[Math.floor(Math.random() * chars.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += symbols[Math.floor(Math.random() * symbols.length)];
+  
+  // Fill remaining 3 characters randomly
+  const allChars = chars + numbers + symbols;
+  for(let i = 0; i < 3; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+}
+
+// Configure nodemailer
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: Number(process.env.EMAIL_PORT),
+  secure: true,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 import { body, validationResult, param } from 'express-validator';
 import Franchise, { IFranchise } from '../models/Franchise';
 import { authenticateToken, requirePermission, requireSuperAdmin, optionalAuth } from '../middleware/auth';
@@ -59,10 +95,13 @@ const validateFranchise = [
     .isLength({ min: 2, max: 50 })
     .withMessage('Industry must be between 2 and 50 characters'),
   body('contactPerson')
-    .optional()
     .trim()
     .isLength({ min: 2, max: 50 })
     .withMessage('Contact person name must be between 2 and 50 characters'),
+  body('email')
+    .trim()
+    .isEmail()
+    .withMessage('Valid email is required for franchise credentials'),
   body('email')
     .optional()
     .isEmail()
@@ -275,8 +314,11 @@ router.post('/', [
   ...validateBankInfo
 ], async (req: AuthRequest, res: AuthResponse) => {
   try {
+    console.log('Creating new franchise with data:', req.body);
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         error: 'Validation failed',
@@ -284,7 +326,14 @@ router.post('/', [
       });
     }
 
-    // Check if franchise with same name already exists
+    if (!req.body.email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email is required for franchise credentials'
+      });
+    }
+
+    // Check if franchise with same name exists
     const existingFranchise = await Franchise.findOne({ 
       name: { $regex: new RegExp(`^${req.body.name}$`, 'i') } 
     });
@@ -296,8 +345,64 @@ router.post('/', [
       });
     }
 
-    const franchise = new Franchise(req.body);
+    // Generate and hash password
+    const tempPassword = generateSecurePassword();
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    // Convert investment range values to numbers if they exist
+    const investmentRange = {
+      min: req.body.investmentRange?.min ? Number(req.body.investmentRange.min) : undefined,
+      max: req.body.investmentRange?.max ? Number(req.body.investmentRange.max) : undefined
+    };
+
+    // Prepare franchise data
+    const franchiseData = {
+      ...req.body,
+      investmentRange,
+      password: hashedPassword,
+      mustChangePassword: true
+    };
+
+    // Remove undefined values
+    Object.keys(franchiseData).forEach(key => 
+      franchiseData[key] === undefined && delete franchiseData[key]
+    );
+
+    const franchise = new Franchise(franchiseData);
     await franchise.save();
+
+    // Send email with credentials if email is provided
+    if (req.body.email) {
+      try {
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: req.body.email,
+          subject: 'Welcome to BharatMart - Franchise Access Credentials',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #2c3e50;">Welcome to BharatMart!</h2>
+              <p>Dear ${req.body.contactPerson || 'Franchise Owner'},</p>
+              <p>Your franchise has been successfully registered with BharatMart. Below are your login credentials:</p>
+              <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p style="margin: 0;"><strong>Login Details:</strong></p>
+                <p style="margin: 10px 0;"><strong>Email:</strong> ${req.body.email}</p>
+                <p style="margin: 10px 0;"><strong>Temporary Password:</strong> <code style="background: #e9ecef; padding: 2px 5px;">${tempPassword}</code></p>
+              </div>
+              <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p style="color: #856404; margin: 0;"><strong>⚠️ Important Security Notice:</strong></p>
+                <p style="color: #856404; margin: 10px 0;">Please change your password when you first log in for security purposes.</p>
+              </div>
+              <p>If you have any questions, please don't hesitate to contact our support team.</p>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+              <p style="color: #666;">Best regards,<br>BharatMart Team</p>
+            </div>
+          `
+        });
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Continue with the response even if email fails
+      }
+    }
 
     res.status(201).json({
       success: true,
