@@ -1,4 +1,4 @@
-import mongoose, { Schema, Model } from 'mongoose';
+import mongoose, { Schema, Model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { BaseDocument } from '../types/common';
 
@@ -30,6 +30,9 @@ export interface IFranchise extends BaseDocument {
   phone?: string;
   email?: string;
   address?: string;
+
+  // Owner reference
+  owner?: Types.ObjectId;
 
   // Legal & banking info
   gst?: string;
@@ -79,6 +82,13 @@ const franchiseSchema = new Schema<IFranchise>({
   phone: String,
   email: String,
   address: String,
+
+  // Owner reference
+  owner: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: false // initially may not be connected to a user
+  },
 
   // Legal & banking info
   gst: String,
