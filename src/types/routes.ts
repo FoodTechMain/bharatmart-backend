@@ -7,6 +7,8 @@ import { IShopDocument } from '../models/Shop';
 export interface AuthRequest extends ExpressRequest {
   user?: IUserDocument;
   shop?: IShopDocument;
+  franchiseId?: Types.ObjectId;
+  userType?: 'admin' | 'franchise';
   headers: ExpressRequest['headers'];
   body: any;
   params: any;

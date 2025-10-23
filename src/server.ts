@@ -29,6 +29,9 @@ import productCategoryRoutes from './routes/productCategories';
 import franchiseRoutes from './routes/Franchise';
 import franchiseProductRoutes from './routes/franchiseProducts';
 import franchiseApplicationRoutes from './routes/FranchiseApplications';
+import franchiseAuthRoutes from './routes/franchiseAuth';
+import franchiseInventoryRoutes from './routes/franchiseInventory';
+import cartRoutes from './routes/cart';
 import homeRoutes from './routes/home';
 import vendorsRoutes from './routes/vendors';
 import brandsRoutes from './routes/brands';
@@ -79,6 +82,7 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/franchise/auth', franchiseAuthRoutes); // Add franchise authentication routes
 app.use('/api/franchise-applications', franchiseApplicationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
@@ -92,7 +96,9 @@ app.use('/api/brands', brandsRoutes);
 app.use('/api/vendor-categories', vendorCategoryRoutes);
 app.use('/api/franchises', franchiseRoutes);
 app.use('/api/franchise-products', franchiseProductRoutes);
+app.use('/api/franchise/inventory', franchiseInventoryRoutes);
 app.use('/api/contact-queries', ContactUsQueryRoutes);
+app.use('/api/cart', cartRoutes);
 
 // Health check endpoint
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -143,6 +149,13 @@ if (process.env.NODE_ENV === 'development') {
           'GET /api/categories': 'Get all categories',
           'POST /api/categories': 'Create category (admin)',
           'PUT /api/categories/:id': 'Update category (admin)'
+        },
+        franchises: {
+          'POST /api/franchise/auth/login': 'Login franchise and get token',
+          'GET /api/franchises': 'Get all franchises',
+          'POST /api/franchises': 'Create franchise (admin)',
+          'PUT /api/franchises/:id': 'Update franchise (admin)',
+          'DELETE /api/franchises/:id': 'Delete franchise (admin)'
         }
       },
       authentication: {
