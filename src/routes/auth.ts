@@ -10,6 +10,7 @@ const router = express.Router();
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { Types } from 'mongoose';
+import nodemailer from 'nodemailer';
 
 // Validation middleware
 const validateRegistration = [
@@ -273,6 +274,56 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: AuthResponse)
     res.status(500).json({
       success: false,
       error: 'Server error',
+      details: (error as Error).message
+    });
+  }
+});
+
+// Test email route
+router.post('/test-email', [
+  authenticateToken,
+  body('email').isEmail().withMessage('Valid email is required'),
+], async (req: AuthRequest, res: AuthResponse) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const { email } = req.body;
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: Number(process.env.EMAIL_PORT),
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'BharatMart Email Test',
+      html: `
+        <h1>Email Test Successful!</h1>
+        <p>This email confirms that the email configuration is working correctly.</p>
+        <p>Time: ${new Date().toLocaleString()}</p>
+      `
+    });
+
+    res.json({
+      success: true,
+      message: 'Test email sent successfully',
+      messageId: info.messageId
+    });
+
+  } catch (error) {
+    console.error('Test email error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send test email',
       details: (error as Error).message
     });
   }
