@@ -7,7 +7,7 @@ import { body, validationResult, param, query } from 'express-validator';
 import FranchiseProduct, { IFranchiseProduct } from '../models/FranchiseProduct';
 import Franchise from '../models/Franchise';
 import ExcelProcessor from '../utils/excelProcessor';
-import { authenticateToken, requireSuperAdmin, requirePermission } from '../middleware/auth';
+import { authenticateAdminOrFranchise } from '../middleware/franchiseAuth';
 import slugify from 'slugify';
 import XLSX from 'xlsx';
 import fs from 'fs/promises';
@@ -141,8 +141,7 @@ const validateProduct = [
 
 // Get all franchise products with advanced filtering
 router.get('/', [
-  authenticateToken,
-  requirePermission('franchise_products:read')
+  authenticateAdminOrFranchise
 ], async (req: AuthRequest, res: AuthResponse) => {
   try {
     const {
@@ -263,8 +262,7 @@ router.get('/', [
 
 // Get product by ID
 router.get('/:id', [
-  authenticateToken,
-  requirePermission('franchise_products:read'),
+  authenticateAdminOrFranchise,
   param('id').isMongoId().withMessage('Invalid product ID')
 ], async (req: AuthRequest, res: AuthResponse) => {
   try {
@@ -303,8 +301,7 @@ router.get('/:id', [
 
 // Create new product
 router.post('/', [
-  authenticateToken,
-  requirePermission('franchise_products:create'),
+  authenticateAdminOrFranchise,
   ...validateProduct
 ], async (req: AuthRequest, res: AuthResponse) => {
   try {
@@ -349,8 +346,7 @@ router.post('/', [
 
 // Update product
 router.put('/:id', [
-  authenticateToken,
-  requirePermission('franchise_products:update'),
+  authenticateAdminOrFranchise,
   param('id').isMongoId().withMessage('Invalid product ID'),
   ...validateProduct
 ], async (req: AuthRequest, res: AuthResponse) => {
@@ -407,8 +403,7 @@ router.put('/:id', [
 
 // Delete product
 router.delete('/:id', [
-  authenticateToken,
-  requirePermission('franchise_products:delete'),
+  authenticateAdminOrFranchise,
   param('id').isMongoId().withMessage('Invalid product ID')
 ], async (req: AuthRequest, res: AuthResponse) => {
   try {
@@ -446,8 +441,7 @@ router.delete('/:id', [
 
 // Bulk import from Excel
 router.post('/bulk/import', [
-  authenticateToken,
-  requirePermission('franchise_products:create'),
+  authenticateAdminOrFranchise,
   upload.single('file'),
   body('franchise').isMongoId().withMessage('Valid franchise ID is required')
 ], async (req: AuthRequest & MulterRequest, res: AuthResponse) => {
@@ -562,8 +556,7 @@ router.post('/bulk/import', [
 
 // Bulk export to Excel
 router.get('/bulk/export', [
-  authenticateToken,
-  requirePermission('franchise_products:read'),
+  authenticateAdminOrFranchise,
   query('franchise').optional().isMongoId().withMessage('Invalid franchise ID'),
   query('format').optional().isIn(['xlsx', 'csv']).withMessage('Format must be xlsx or csv')
 ], async (req: AuthRequest, res: AuthResponse) => {
@@ -612,8 +605,7 @@ router.get('/bulk/export', [
 
 // Download Excel template
 router.get('/template/download', [
-  authenticateToken,
-  requirePermission('franchise_products:create')
+  authenticateAdminOrFranchise
 ], async (_req: AuthRequest, res: AuthResponse) => {
   try {
     const workbook = ExcelProcessor.generateTemplate();
@@ -635,8 +627,7 @@ router.get('/template/download', [
 
 // Bulk update products
 router.put('/bulk/update', [
-  authenticateToken,
-  requirePermission('franchise_products:update'),
+  authenticateAdminOrFranchise,
   body('updates').isArray().withMessage('Updates must be an array'),
   body('updates.*._id').isMongoId().withMessage('Invalid product ID'),
   body('franchise').isMongoId().withMessage('Valid franchise ID is required')
@@ -693,8 +684,7 @@ router.put('/bulk/update', [
 
 // Bulk delete products
 router.delete('/bulk/delete', [
-  authenticateToken,
-  requirePermission('franchise_products:delete'),
+  authenticateAdminOrFranchise,
   body('productIds').isArray().withMessage('Product IDs must be an array'),
   body('productIds.*').isMongoId().withMessage('Invalid product ID'),
   body('franchise').isMongoId().withMessage('Valid franchise ID is required')
@@ -735,8 +725,7 @@ router.delete('/bulk/delete', [
 
 // Get product statistics
 router.get('/stats/overview', [
-  authenticateToken,
-  requirePermission('franchise_products:read'),
+  authenticateAdminOrFranchise,
   query('franchise').optional().isMongoId().withMessage('Invalid franchise ID')
 ], async (req: AuthRequest, res: AuthResponse) => {
   try {
