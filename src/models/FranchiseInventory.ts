@@ -10,7 +10,8 @@ export type InventoryTransactionType =
   | 'expired' 
   | 'transfer_in' 
   | 'transfer_out'
-  | 'initial_stock';
+  | 'initial_stock'
+  | 'reorder';
 
 export interface IFranchiseInventory extends ITimestamps {
   franchise: Types.ObjectId;
@@ -82,7 +83,8 @@ const franchiseInventorySchema = new Schema<IFranchiseInventoryDocument, IFranch
       'expired',
       'transfer_in',
       'transfer_out',
-      'initial_stock'
+      'initial_stock',
+      'reorder'
     ],
     required: true,
     index: true
