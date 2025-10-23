@@ -315,6 +315,12 @@ router.post('/', [
 ], async (req: AuthRequest, res: AuthResponse) => {
   try {
     console.log('Creating new franchise with data:', req.body);
+    console.log('SMTP Email Configuration:', {
+      host: process.env.EMAIL_HOST,
+      port: process.env.EMAIL_PORT,
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    });
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -371,13 +377,15 @@ router.post('/', [
     const franchise = new Franchise(franchiseData);
     await franchise.save();
 
+    console.log("the email of the franchise owner is " + req.body.email);
     // Send email with credentials if email is provided
     if (req.body.email) {
       try {
+        console.log('Sending welcome email to:', req.body.email);
         await transporter.sendMail({
           from: process.env.EMAIL_USER,
           to: req.body.email,
-          subject: 'Welcome to BharatMart - Franchise Access Credentials',
+          subject: 'Welcome to BharatMart - Your Franchise Access Credentials',
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #2c3e50;">Welcome to BharatMart!</h2>
@@ -398,6 +406,7 @@ router.post('/', [
             </div>
           `
         });
+        console.log('Welcome email sent successfully to:', req.body.email);
       } catch (emailError) {
         console.error('Failed to send welcome email:', emailError);
         // Continue with the response even if email fails
