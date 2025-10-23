@@ -89,7 +89,7 @@ cartSchema.index({ user: 1 });
 // Method to add item to cart
 cartSchema.methods.addItem = async function(item: ICartItem): Promise<void> {
   const existingItemIndex = this.items.findIndex(
-    cartItem => cartItem.product.toString() === item.product.toString()
+    (cartItem: ICartItem) => cartItem.product.toString() === item.product.toString()
   );
 
   if (existingItemIndex > -1) {
@@ -107,7 +107,7 @@ cartSchema.methods.addItem = async function(item: ICartItem): Promise<void> {
 
 // Method to remove item from cart
 cartSchema.methods.removeItem = async function(productId: Types.ObjectId): Promise<void> {
-  this.items = this.items.filter(item => item.product.toString() !== productId.toString());
+  this.items = this.items.filter((item: ICartItem) => item.product.toString() !== productId.toString());
   this.calculateTotals();
   await this.save();
 };
@@ -115,7 +115,7 @@ cartSchema.methods.removeItem = async function(productId: Types.ObjectId): Promi
 // Method to update item quantity
 cartSchema.methods.updateItemQuantity = async function(productId: Types.ObjectId, quantity: number): Promise<void> {
   const existingItemIndex = this.items.findIndex(
-    cartItem => cartItem.product.toString() === productId.toString()
+    (cartItem: ICartItem) => cartItem.product.toString() === productId.toString()
   );
 
   if (existingItemIndex > -1) {
@@ -142,8 +142,8 @@ cartSchema.methods.clearCart = async function(): Promise<void> {
 // Method to calculate totals
 cartSchema.methods.calculateTotals = function(): void {
   this.totalItems = this.items.length;
-  this.totalQuantity = this.items.reduce((sum, item) => sum + item.quantity, 0);
-  this.totalAmount = this.items.reduce((sum, item) => sum + item.total, 0);
+  this.totalQuantity = this.items.reduce((sum: number, item: ICartItem) => sum + item.quantity, 0);
+  this.totalAmount = this.items.reduce((sum: number, item: ICartItem) => sum + item.total, 0);
 };
 
 // Static method to find cart by user
@@ -159,7 +159,7 @@ cartSchema.statics.createOrUpdateForUser = async function(userId: Types.ObjectId
     return cart;
   }
   
-  cart = new Cart({
+  cart = new this({
     user: userId,
     items: [],
     totalItems: 0,
