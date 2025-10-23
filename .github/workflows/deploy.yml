@@ -27,8 +27,8 @@ jobs:
           echo 'JWT_EXPIRES_IN="1h"' >> .env
           echo 'PORT="5000"' >> .env
           echo 'NODE_ENV="production"' >> .env
-          echo 'EMAIL_HOST="smtp.gmail.com"' >> .env
-          echo 'EMAIL_PORT="587"' >> .env
+          echo 'EMAIL_HOST="${{ secrets.EMAIL_HOST }}"' >> .env
+          echo 'EMAIL_PORT="${{ secrets.EMAIL_PORT}}"' >> .env
           echo 'EMAIL_USER="${{ secrets.EMAIL_USER }}"' >> .env
           echo 'EMAIL_PASS="${{ secrets.EMAIL_PASS }}"' >> .env
           echo 'EMAIL_FROM="${{ secrets.EMAIL_FROM }}"' >> .env
