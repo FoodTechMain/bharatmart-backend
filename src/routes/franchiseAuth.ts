@@ -2,6 +2,7 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import Franchise from '../models/Franchise';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import { authenticateToken } from '../middleware/auth';
 import { AuthRequest, AuthResponse } from '../types/routes';
 
@@ -162,3 +163,62 @@ router.get('/me', async (req: AuthRequest, res: AuthResponse) => {
 });
 
 export default router;
+
+// Update password for franchise (protected)
+router.post('/update-password', async (req: AuthRequest, res: AuthResponse) => {
+  try {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ success: false, error: 'All password fields are required' });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ success: false, error: 'New passwords do not match' });
+    }
+
+    if ((newPassword || '').length < 6) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
+    }
+
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({ success: false, error: 'Access token is required' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as { franchiseId: string; role: string };
+
+    if (!decoded || decoded.role !== 'franchise') {
+      return res.status(401).json({ success: false, error: 'Not a franchise account' });
+    }
+
+    const franchise = await Franchise.findById(decoded.franchiseId).select('+password');
+    if (!franchise) {
+      return res.status(404).json({ success: false, error: 'Franchise not found' });
+    }
+
+    if (!franchise.password) {
+      return res.status(400).json({ success: false, error: 'Current password is not set' });
+    }
+
+    const match = await Franchise.comparePassword(oldPassword, franchise.password);
+    if (!match) {
+      return res.status(401).json({ success: false, error: 'Current password is incorrect' });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    franchise.password = hashed;
+    franchise.mustChangePassword = false;
+    await franchise.save();
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Update password error:', error);
+    if ((error as any).name === 'JsonWebTokenError' || (error as any).name === 'TokenExpiredError') {
+      return res.status(401).json({ success: false, error: 'Invalid or expired token' });
+    }
+    res.status(500).json({ success: false, error: 'Server error', details: (error as Error).message });
+  }
+});
