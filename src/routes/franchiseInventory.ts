@@ -15,7 +15,7 @@ router.get('/', authenticateFranchise, [
   query('productId').optional().isMongoId(),
   query('transactionType').optional().isIn([
     'purchase', 'sale', 'adjustment', 'return', 'damage', 
-    'expired', 'transfer_in', 'transfer_out', 'initial_stock'
+    'expired', 'transfer_in', 'transfer_out', 'initial_stock', 'reorder'
   ]),
   query('startDate').optional().isISO8601(),
   query('endDate').optional().isISO8601()
@@ -151,7 +151,7 @@ router.post('/', [
   body('productId').isMongoId().withMessage('Valid product ID is required'),
   body('transactionType').isIn([
     'purchase', 'sale', 'adjustment', 'return', 'damage',
-    'expired', 'transfer_in', 'transfer_out', 'initial_stock'
+    'expired', 'transfer_in', 'transfer_out', 'initial_stock', 'reorder'
   ]).withMessage('Valid transaction type is required'),
   body('quantity').isInt().withMessage('Quantity must be an integer'),
   body('referenceNumber').optional().trim().isLength({ max: 100 }),
