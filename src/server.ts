@@ -36,6 +36,8 @@ import homeRoutes from './routes/home';
 import vendorsRoutes from './routes/vendors';
 import brandsRoutes from './routes/brands';
 import ContactUsQueryRoutes from './routes/contactusQueries';
+import employeeRoutes from './routes/Employee';
+import departmentRoutes from './routes/departments';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
@@ -85,6 +87,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/franchise/auth', franchiseAuthRoutes); // Add franchise authentication routes
 app.use('/api/franchise-applications', franchiseApplicationRoutes);
 app.use('/api/users', userRoutes);
+
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -99,6 +102,8 @@ app.use('/api/franchise-products', franchiseProductRoutes);
 app.use('/api/franchise/inventory', franchiseInventoryRoutes);
 app.use('/api/contact-queries', ContactUsQueryRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/departments', departmentRoutes);
 
 // Health check endpoint
 app.get('/api/health', (_req: Request, res: Response) => {
