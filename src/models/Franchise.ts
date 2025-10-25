@@ -52,6 +52,9 @@ export interface IFranchise extends BaseDocument {
   // Authentication
   password?: string;
   mustChangePassword?: boolean;
+  // Password reset OTP fields
+  resetPasswordOTP?: string;
+  resetPasswordExpires?: Date;
 }
 
 interface IFranchiseModel extends Model<IFranchise> {
@@ -127,6 +130,15 @@ const franchiseSchema = new Schema<IFranchise>({
   mustChangePassword: {
     type: Boolean,
     default: true
+  }
+  ,
+  // Fields for password reset via OTP
+  resetPasswordOTP: {
+    type: String,
+    select: false
+  },
+  resetPasswordExpires: {
+    type: Date
   }
 }, {
   timestamps: true // This replaces the manual createdAt and updatedAt fields

@@ -222,3 +222,111 @@ router.post('/update-password', async (req: AuthRequest, res: AuthResponse) => {
     res.status(500).json({ success: false, error: 'Server error', details: (error as Error).message });
   }
 });
+
+// Forgot password - send OTP
+router.post('/forgot-password', [
+  body('email').isEmail().normalizeEmail()
+], async (req: AuthRequest, res: AuthResponse) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, error: 'Validation failed', details: errors.array() });
+    }
+
+    const { email } = req.body;
+
+    // Generate OTP (6 digit)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Find franchise
+    const franchise = await Franchise.findOne({ email }).select('+email');
+
+    // If franchise not found, inform caller
+    if (!franchise) {
+      return res.status(404).json({ success: false, error: 'Email does not exist' });
+    }
+
+    const hashedOtp = await bcrypt.hash(otp, 10);
+    franchise.resetPasswordOTP = hashedOtp;
+    franchise.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    await franchise.save();
+
+    // Try sending email using available env vars (EMAIL_HOST etc). If it fails, in non-production return the OTP in response for testing.
+    try {
+      const nodemailer = await import('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: Number(process.env.EMAIL_PORT) || 465,
+        secure: true,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      });
+
+      await transporter.sendMail({
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        to: email,
+        subject: 'Your password reset OTP',
+        text: `Your OTP for password reset is: ${otp}. It expires in 1 hour.`
+      });
+    } catch (emailErr) {
+      console.error('Failed to send reset OTP email:', emailErr);
+      if (process.env.NODE_ENV !== 'production') {
+        // For development/testing, include OTP in response
+        return res.json({ success: true, message: 'OTP generated (development)', otp });
+      }
+    }
+
+    res.json({ success: true, message: 'If an account with that email exists, an OTP has been sent' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ success: false, error: 'Server error', details: (error as Error).message });
+  }
+});
+
+// Reset password using OTP
+router.post('/reset-password', [
+  body('email').isEmail().normalizeEmail(),
+  body('otp').notEmpty(),
+  body('newPassword').isLength({ min: 6 })
+], async (req: AuthRequest, res: AuthResponse) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, error: 'Validation failed', details: errors.array() });
+    }
+
+    const { email, otp, newPassword } = req.body;
+    const franchise = await Franchise.findOne({ email }).select('+resetPasswordOTP +resetPasswordExpires +password');
+    if (!franchise) {
+      return res.status(404).json({ success: false, error: 'Email does not exist' });
+    }
+
+    if (!franchise.resetPasswordOTP || !franchise.resetPasswordExpires) {
+      return res.status(400).json({ success: false, error: 'No OTP requested for this email' });
+    }
+
+    if (franchise.resetPasswordExpires.getTime() < Date.now()) {
+      return res.status(400).json({ success: false, error: 'OTP has expired' });
+    }
+
+  const providedOtp = (otp || '').toString().trim();
+  const match = await bcrypt.compare(providedOtp, franchise.resetPasswordOTP as string);
+    if (!match) {
+      return res.status(400).json({ success: false, error: 'OTP is incorrect' });
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    franchise.password = hashed;
+    franchise.mustChangePassword = false;
+    franchise.resetPasswordOTP = undefined as any;
+    franchise.resetPasswordExpires = undefined as any;
+    await franchise.save();
+
+    res.json({ success: true, message: 'Password has been reset successfully' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ success: false, error: 'Server error', details: (error as Error).message });
+  }
+});
