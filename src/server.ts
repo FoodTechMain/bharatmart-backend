@@ -58,17 +58,26 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // CORS configuration
-const corsOrigins = process.env.CORS_ORIGIN 
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000'];
+// ✅ Enhanced CORS configuration (works for both dev & prod)
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
+  : ["http://localhost:3000", "http://localhost:3001"];
 
-// In development allow requests from any origin (CRA may choose a different port like 3001).
-if (process.env.NODE_ENV === 'development') {
-  console.log('[Server] Development mode: enabling permissive CORS for local testing');
-  app.use(cors({ origin: true, credentials: true }));
-} else {
-  app.use(cors({ origin: corsOrigins, credentials: true }));
-}
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like Postman)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.error("❌ Blocked by CORS:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // allows cookies or Authorization headers
+    methods: process.env.CORS_METHODS?.split(",") || ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  })
+);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -215,7 +224,7 @@ console.log('Environment variables loaded:');
 console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- PORT:', PORT);
 console.log('- MONGODB_URI:', MONGODB_URI);
-console.log('- CORS_ORIGIN:', corsOrigins);
+console.log('- CORS_ORIGIN:', allowedOrigins);
 
 mongoose.connect(MONGODB_URI)
   .then(() => {

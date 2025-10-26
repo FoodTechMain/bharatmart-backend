@@ -90,6 +90,10 @@ const validateFranchise = [
     .trim()
     .isLength({ min: 10, max: 1000 })
     .withMessage('Description must be between 10 and 1000 characters'),
+  body('franchiseType')
+    .trim()
+    .isIn(['foco', 'fofo'])
+    .withMessage('Franchise type must be either "foco" or "fofo"'),
   body('industry')
     .trim()
     .isLength({ min: 2, max: 50 })
@@ -225,7 +229,9 @@ router.get('/', optionalAuth, async (req: AuthRequest, res: AuthResponse) => {
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
         { industry: { $regex: search, $options: 'i' } },
-        { contactPerson: { $regex: search, $options: 'i' } }
+        { contactPerson: { $regex: search, $options: 'i' } },
+        // Allow searching by franchiseId (partial or full, case-insensitive)
+        { franchiseId: { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -361,12 +367,36 @@ router.post('/', [
       max: req.body.investmentRange?.max ? Number(req.body.investmentRange.max) : undefined
     };
 
+    // Determine franchise type and generate a unique franchiseId with appropriate prefix
+    const requestedType = (req.body.franchiseType || '').toString().toLowerCase();
+  let prefix = 'fr';
+  if (requestedType === 'foco') prefix = 'fc';
+  else if (requestedType === 'fofo') prefix = 'ff';
+
+    // generate unique numeric suffix and ensure uniqueness
+    async function generateUniqueFranchiseId(): Promise<string> {
+      for (let i = 0; i < 6; i++) {
+          const suffix = Math.floor(100000 + Math.random() * 900000); // 6 digits
+          const candidate = `${prefix.toUpperCase()}${suffix}`;
+          // check uniqueness
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          const exists = await Franchise.findOne({ franchiseId: candidate }).lean().exec();
+          if (!exists) return candidate;
+        }
+        // fallback to timestamp
+        return `${prefix.toUpperCase()}${Date.now()}`;
+    }
+
+    const generatedFranchiseId = await generateUniqueFranchiseId();
     // Prepare franchise data
     const franchiseData = {
       ...req.body,
       investmentRange,
       password: hashedPassword,
-      mustChangePassword: true
+      mustChangePassword: true,
+      franchiseType: requestedType || req.body.franchiseType,
+      franchiseId: generatedFranchiseId
     };
 
     // Remove undefined values

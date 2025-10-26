@@ -115,7 +115,7 @@ router.get('/', (_req: AuthRequest, res: AuthResponse) => {
       message: 'BharatMart API',
       version: '1.0.0',
       status: 'running',
-      environment: 'production'
+      environment: process.env.NODE_ENV || 'production'
     });
   }
 });

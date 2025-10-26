@@ -34,6 +34,10 @@ export interface IFranchise extends BaseDocument {
   // Owner reference
   owner?: Types.ObjectId;
 
+  // Franchise type and identifier
+  franchiseType?: 'foco' | 'fofo';
+  franchiseId?: string;
+
   // Legal & banking info
   gst?: string;
   pan?: string;
@@ -70,6 +74,19 @@ const franchiseSchema = new Schema<IFranchise>({
   },
   description: {
     type: String,
+    required: true
+  },
+  // Type of franchise (foco | fofo)
+  franchiseType: {
+    type: String,
+    enum: ['foco', 'fofo'],
+    required: true
+  },
+  // Public franchise identifier (unique)
+  franchiseId: {
+    type: String,
+    unique: true,
+    index: true,
     required: true
   },
   industry: {
