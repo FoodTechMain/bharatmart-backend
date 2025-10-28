@@ -237,7 +237,17 @@ mongoose.connect(MONGODB_URI)
   })
   .catch((err: Error) => {
     console.error('MongoDB connection error:', err.message);
-    process.exit(1);
+    // In development allow the server to start so front-end / reCAPTCHA testing can proceed
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Starting server without MongoDB connection (development mode). Some features may be limited.');
+      app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT} (no MongoDB)`);
+        console.log(`Environment: ${process.env.NODE_ENV}`);
+        console.log(`API: http://localhost:${PORT}`);
+      });
+    } else {
+      process.exit(1);
+    }
   });
 
 export default app;

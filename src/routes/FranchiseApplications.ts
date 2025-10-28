@@ -8,22 +8,88 @@ const router = express.Router();
 // Submit new franchise application (Public route)
 router.post('/apply', async (req: Request, res: Response) => {
   try {
-    const application = new FranchiseApplication(req.body);
+    // Verify reCAPTCHA token
+    const recaptchaToken = req.body?.recaptchaToken;
+    const secret = process.env.RECAPTCHA_SECRET;
+
+    if (!recaptchaToken) {
+      return res.status(400).json({ success: false, message: 'reCAPTCHA token missing' });
+    }
+
+    if (!secret) {
+      console.warn('RECAPTCHA_SECRET is not set in environment; skipping verification (not recommended)');
+    } else {
+      // Use Google's siteverify API
+      const params = new URLSearchParams();
+      params.append('secret', secret);
+      params.append('response', recaptchaToken);
+      params.append('remoteip', req.ip || '');
+
+      // Ensure a fetch implementation is available (Node <18 may not have global fetch)
+      let fetchFn: typeof fetch | undefined = (globalThis as any).fetch;
+      if (!fetchFn) {
+        try {
+          // Dynamically import without a string literal so TypeScript won't try to resolve types at compile time.
+          // This allows optional runtime import of node-fetch without requiring its type declarations.
+          const nodeFetch = await import('node' + '-fetch').then(m => m as any);
+          // node-fetch exports default
+          fetchFn = nodeFetch.default || nodeFetch;
+        } catch (err) {
+          console.warn('node-fetch not installed or failed to import; fetch may be unavailable for reCAPTCHA verification', err);
+        }
+      }
+
+      if (!fetchFn) {
+        console.error('No fetch available on server for reCAPTCHA verification. Install node-fetch or run on Node 18+');
+        return res.status(500).json({ success: false, message: 'Server fetch not available for reCAPTCHA verification' });
+      }
+
+      const verifyRes = await fetchFn('https://www.google.com/recaptcha/api/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
+
+      // Log HTTP status if not OK to aid debugging
+      if (!verifyRes.ok) {
+        console.error('reCAPTCHA siteverify HTTP error', { status: verifyRes.status, statusText: verifyRes.statusText });
+      }
+
+      type RecaptchaVerifyResponse = {
+        success?: boolean;
+        'challenge_ts'?: string;
+        hostname?: string;
+        'error-codes'?: string[];
+        [key: string]: any;
+      };
+
+      const verifyJson = (await verifyRes.json()) as RecaptchaVerifyResponse;
+
+      if (!verifyJson || typeof verifyJson !== 'object' || verifyJson.success !== true) {
+        console.error('reCAPTCHA verification failed', verifyJson);
+        // Provide error-codes back to client for diagnostics (do not expose secrets)
+        return res.status(400).json({ success: false, message: 'reCAPTCHA verification failed', details: verifyJson });
+      }
+    }
+
+    // Remove recaptchaToken from the stored application data
+    const { recaptchaToken: _rc, ...applicationData } = req.body;
+    const application = new FranchiseApplication(applicationData);
     await application.save();
 
     // TODO: Send email notifications to admin and applicant
-    
+
     res.status(201).json({
       success: true,
       message: 'Application submitted successfully',
-      applicationId: application._id
+      applicationId: application._id,
     });
   } catch (error) {
     console.error('Franchise application submission error:', error);
     res.status(400).json({
       success: false,
       message: 'Failed to submit application',
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
     });
   }
 });
