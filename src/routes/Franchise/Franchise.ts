@@ -105,12 +105,8 @@ const validateFranchise = [
   body('email')
     .trim()
     .isEmail()
-    .withMessage('Valid email is required for franchise credentials'),
-  body('email')
-    .optional()
-    .isEmail()
     .normalizeEmail()
-    .withMessage('Valid email is required'),
+    .withMessage('Valid email is required for franchise credentials'),
   body('phone')
     .optional()
     .isMobilePhone('any')
