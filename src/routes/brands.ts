@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import Brand, { IBrand } from '../models/Brand';
-import Vendor from '../models/Vendor';
+import Vendor from '../models/Vendors/Vendor';
 import { authenticateToken, requirePermission } from '../middleware/auth';
 import { AuthRequest, AuthResponse } from '../types/routes';
 

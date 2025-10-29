@@ -1,6 +1,6 @@
 import { AuthRequest, AuthResponse } from '../types/routes';
-import Franchise from '../models/Franchise';
-import User from '../models/User';
+import Franchise from '../models/Franchise/Franchise';
+import User from '../models/User/User';
 import jwt from 'jsonwebtoken';
 
 interface FranchiseJwtPayload {

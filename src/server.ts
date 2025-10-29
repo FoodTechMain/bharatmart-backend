@@ -17,27 +17,27 @@ dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 import { AuthRequest as Request, AuthResponse as Response, AuthNextFunction as NextFunction } from './types/express';
 
 // Import routes
-import authRoutes from './routes/auth';
-import userRoutes from './routes/users';
-import productRoutes from './routes/products';
-import orderRoutes from './routes/orders';
-import categoryRoutes from './routes/categories';
-import shopRoutes from './routes/shops';
+import authRoutes from './routes/Auth/auth';
+import userRoutes from './routes/User/users';
+import productRoutes from './routes/Product/products';
+import orderRoutes from './routes/Order/orders';
+import categoryRoutes from './routes/Product/categories';
+import shopRoutes from './routes/Shop/shops';
 import settingsRoutes from './routes/settings';
-import vendorCategoryRoutes from './routes/vendorCategories';
-import productCategoryRoutes from './routes/productCategories';
-import franchiseRoutes from './routes/Franchise';
-import franchiseProductRoutes from './routes/franchiseProducts';
-import franchiseApplicationRoutes from './routes/FranchiseApplications';
-import franchiseAuthRoutes from './routes/franchiseAuth';
-import franchiseInventoryRoutes from './routes/franchiseInventory';
+import vendorCategoryRoutes from './routes/Vendors/vendorCategories';
+import productCategoryRoutes from './routes/Product/productCategories';
+import franchiseRoutes from './routes/Franchise/Franchise';
+import franchiseProductRoutes from './routes/Franchise/franchiseProducts';
+import franchiseApplicationRoutes from './routes/Franchise/FranchiseApplications';
+import franchiseAuthRoutes from './routes/Franchise/franchiseAuth';
+import franchiseInventoryRoutes from './routes/Franchise/franchiseInventory';
 import cartRoutes from './routes/cart';
 import homeRoutes from './routes/home';
-import vendorsRoutes from './routes/vendors';
+import vendorsRoutes from './routes/Vendors/vendors';
 import brandsRoutes from './routes/brands';
-import ContactUsQueryRoutes from './routes/contactusQueries';
-import employeeRoutes from './routes/Employee';
-import departmentRoutes from './routes/departments';
+import ContactUsQueryRoutes from './routes/Query/contactusQueries';
+import employeeRoutes from './routes/Employee/Employee';
+import departmentRoutes from './routes/Employee/departments';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
