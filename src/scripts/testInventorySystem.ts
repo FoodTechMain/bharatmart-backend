@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
-import FranchiseInventory from '../models/FranchiseInventory';
-import FranchiseProduct from '../models/FranchiseProduct';
-import Franchise from '../models/Franchise';
+import FranchiseInventory from '../models/Franchise/FranchiseInventory';
+import FranchiseProduct from '../models/Franchise/FranchiseProduct';
+import Franchise from '../models/Franchise/Franchise';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 

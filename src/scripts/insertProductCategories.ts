@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import ProductCategory from '../models/ProductCategory';
+import ProductCategory from '../models/Product/ProductCategory';
 
 dotenv.config();
 

@@ -1,7 +1,7 @@
 import type { Request as ExpressRequest } from 'express-serve-static-core';
 import type { Response as ExpressResponse } from 'express-serve-static-core';
 import type { NextFunction as ExpressNextFunction } from 'express-serve-static-core';
-import { IUserDocument } from '../models/User';
+import { IUserDocument } from '../models/User/User';
 import { IShopDocument } from '../models/Shop/Shop';
 
 export interface AuthRequest extends ExpressRequest {

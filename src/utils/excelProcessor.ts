@@ -1,5 +1,5 @@
 import XLSX from 'xlsx';
-import { IFranchiseProduct } from '../models/FranchiseProduct';
+import { IFranchiseProduct } from '../models/Franchise/FranchiseProduct';
 import { WeightUnit, DimensionUnit, IProductWeight, IProductDimensions } from '../types/mongoose';
 
 interface ExcelValidationError {

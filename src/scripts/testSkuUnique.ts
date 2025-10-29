@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Product from '../models/Product';
+import Product from '../models/Product/Product';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/bharatmart_test';
 

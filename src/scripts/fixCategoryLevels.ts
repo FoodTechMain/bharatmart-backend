@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Category, { ICategory } from '../models/Category';
+import Category, { ICategory } from '../models/Product/Category';
 
 interface LevelStat {
   _id: number;
@@ -64,7 +64,7 @@ async function fixCategoryLevels(): Promise<void> {
     ]);
     
     console.log('\n📊 Level distribution after fix:');
-    levelStats.forEach(stat => {
+    levelStats.forEach((stat: LevelStat) => {
       console.log(`Level ${stat._id}: ${stat.count} categories`);
     });
     
