@@ -32,6 +32,7 @@ jobs:
           echo 'EMAIL_USER="${{ secrets.EMAIL_USER }}"' >> .env
           echo 'EMAIL_PASS="${{ secrets.EMAIL_PASS }}"' >> .env
           echo 'EMAIL_FROM="${{ secrets.EMAIL_FROM }}"' >> .env
+          echo 'RECAPTCHA_SECRET ="${{ secrets.RECAPTCHA_SECRET }}"' >> .env
           echo 'UPLOAD_PATH="./uploads"' >> .env
           echo 'MAX_FILE_SIZE="5242880"' >> .env
           echo 'RATE_LIMIT_WINDOW_MS="900000"' >> .env
