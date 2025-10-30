@@ -75,7 +75,12 @@ app.use(
       }
     },
     credentials: true, // allows cookies or Authorization headers
-    methods: process.env.CORS_METHODS?.split(",") || ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: process.env.CORS_METHODS?.split(",") || ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"],
+    exposedHeaders: ["Content-Range", "X-Content-Range"],
+    maxAge: 86400, // 24 hours
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   })
 );
 
