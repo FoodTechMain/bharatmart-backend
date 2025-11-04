@@ -114,43 +114,25 @@ interface BulkOperationResult {
 
 // Validation middleware
 const validateProduct = [
-  body("name")
-    .trim()
-    .isLength({ min: 2, max: 200 })
-    .withMessage("Product name must be between 2 and 200 characters"),
-
-  body("description")
-    .trim()
-    .isLength({ min: 10, max: 1000 })
-    .withMessage("Description must be between 10 and 1000 characters"),
-
-  body("sku")
-    .trim()
-    .isLength({ min: 3, max: 50 })
-    .withMessage("SKU must be between 3 and 50 characters"),
-
-  body("price")
-    .isFloat({ min: 0 })
-    .withMessage("Price must be a non-negative number"),
-
-  body("stock")
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage("Stock must be a non-negative integer"),
-
-  body("minStock")
-    .optional()
-    .isInt({ min: 0 })
-    .withMessage("Min stock must be a non-negative integer"),
-
-  body("category")
-    .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage("Category must be between 2 and 100 characters"),
+  body("bharatmartProduct")
+    .isMongoId()
+    .withMessage("Valid main product ID is required"),
 
   body("franchise")
     .isMongoId()
     .withMessage("Valid franchise ID is required"),
+
+  body("stock")
+    .isInt({ min: 0 })
+    .withMessage("Stock must be a non-negative integer"),
+
+  body("minStock")
+    .isInt({ min: 0 })
+    .withMessage("Min stock must be a non-negative integer"),
+
+  body("sellingPrice")
+    .isFloat({ min: 0 })
+    .withMessage("Selling price must be a non-negative number"),
 ];
 
 // Get all franchise products with advanced filtering
@@ -181,34 +163,12 @@ router.get('/', [
       query.franchise = franchise;
     }
     
-    if (search && search.trim() !== '') {
-      query.$text = { $search: search };
-    }
-    
-    if (category && category.trim() !== '') {
-      query.category = { $regex: category, $options: 'i' };
-    }
-    
-    if (brand && brand.trim() !== '') {
-      query.brand = { $regex: brand, $options: 'i' };
-    }
-    
-    if (minPrice || maxPrice) {
-      query.price = {};
-      if (minPrice) query.price.$gte = parseFloat(minPrice);
-      if (maxPrice) query.price.$lte = parseFloat(maxPrice);
-    }
-    
     if (lowStock === 'true') {
       query.$expr = { $lte: ['$stock', '$minStock'] };
     }
     
     if (isActive !== undefined && isActive !== '') {
       query.isActive = isActive === 'true';
-    }
-    
-    if (isFeatured !== undefined && isFeatured !== '') {
-      query.isFeatured = isFeatured === 'true';
     }
 
     // Sort options
@@ -218,49 +178,92 @@ router.get('/', [
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
 
-    const products = await FranchiseProduct.find(query)
-      .populate('franchise', 'name industry')
+    // First, get all franchise products with populated main product data
+    let products = await FranchiseProduct.find(query)
+      .populate({
+        path: 'franchise',
+        select: 'name industry'
+      })
+      .populate({
+        path: 'bharatmartProduct',
+        select: 'name description sku category brand images costPrice stock'
+      })
       .sort(sortOptions)
-      .limit(limitNum)
-      .skip((pageNum - 1) * limitNum)
       .lean()
       .exec();
 
-    const total = await FranchiseProduct.countDocuments(query);
+    // Apply search filter on populated product data if search term exists
+    if (search && search.trim() !== '') {
+      const searchTerm = search.toLowerCase().trim();
+      products = products.filter((product: any) => {
+        const mainProduct = product.bharatmartProduct;
+        if (!mainProduct) return false;
+        
+        return (
+          (mainProduct.name && mainProduct.name.toLowerCase().includes(searchTerm)) ||
+          (mainProduct.sku && mainProduct.sku.toLowerCase().includes(searchTerm)) ||
+          (mainProduct.description && mainProduct.description.toLowerCase().includes(searchTerm)) ||
+          (mainProduct.category?.name && mainProduct.category.name.toLowerCase().includes(searchTerm)) ||
+          (mainProduct.brand?.name && mainProduct.brand.name.toLowerCase().includes(searchTerm))
+        );
+      });
+    }
 
-    // Get aggregation stats
-    const stats = await FranchiseProduct.aggregate([
-      { $match: query },
-      {
-        $group: {
-          _id: null,
-          totalProducts: { $sum: 1 },
-          totalValue: { $sum: { $multiply: ['$stock', '$price'] } },
-          avgPrice: { $avg: '$price' },
-          lowStockCount: {
-            $sum: {
-              $cond: [{ $lte: ['$stock', '$minStock'] }, 1, 0]
-            }
-          }
-        }
-      }
-    ]);
+    // Apply category filter
+    if (category && category.trim() !== '') {
+      const categoryTerm = category.toLowerCase();
+      products = products.filter((product: any) => {
+        const mainProduct = product.bharatmartProduct;
+        return mainProduct?.category?.name && 
+               mainProduct.category.name.toLowerCase().includes(categoryTerm);
+      });
+    }
+
+    // Apply brand filter
+    if (brand && brand.trim() !== '') {
+      const brandTerm = brand.toLowerCase();
+      products = products.filter((product: any) => {
+        const mainProduct = product.bharatmartProduct;
+        return mainProduct?.brand?.name && 
+               mainProduct.brand.name.toLowerCase().includes(brandTerm);
+      });
+    }
+
+    // Apply price filter
+    if (minPrice || maxPrice) {
+      products = products.filter((product: any) => {
+        const price = product.sellingPrice;
+        if (minPrice && price < parseFloat(minPrice)) return false;
+        if (maxPrice && price > parseFloat(maxPrice)) return false;
+        return true;
+      });
+    }
+
+    // Get total count after filtering
+    const total = products.length;
+
+    // Apply pagination
+    const startIndex = (pageNum - 1) * limitNum;
+    const paginatedProducts = products.slice(startIndex, startIndex + limitNum);
+
+    // Calculate stats from filtered products
+    const stats = {
+      totalProducts: total,
+      totalValue: products.reduce((sum: number, p: any) => sum + (p.stock * p.sellingPrice), 0),
+      avgPrice: total > 0 ? products.reduce((sum: number, p: any) => sum + p.sellingPrice, 0) / total : 0,
+      lowStockCount: products.filter((p: any) => p.stock <= p.minStock).length
+    };
 
     const response: PaginatedResponse<IFranchiseProduct[]> = {
       success: true,
-      data: products,
+      data: paginatedProducts,
       pagination: {
         total,
         currentPage: pageNum,
         limit: limitNum,
         totalPages: Math.ceil(total / limitNum)
       },
-      stats: stats[0] || {
-        totalProducts: 0,
-        totalValue: 0,
-        avgPrice: 0,
-        lowStockCount: 0
-      }
+      stats: stats
     };
 
     res.json(response);
@@ -290,7 +293,8 @@ router.get('/:id', [
     }
 
     const product = await FranchiseProduct.findById(req.params.id)
-      .populate('franchise', 'name industry contactPerson email');
+      .populate('franchise', 'name industry contactPerson email')
+      .populate('bharatmartProduct', 'name description sku category brand images costPrice stock');
     
     if (!product) {
       return res.status(404).json({
@@ -316,11 +320,10 @@ router.get('/:id', [
 // Create new product
 router.post('/', [
   authenticateAdminOrFranchise,
-  body("bharatmartProductId").optional().isMongoId().withMessage("Valid main product ID is required if provided"),
   ...validateProduct
 ], async (req: AuthRequest, res: AuthResponse) => {
   try {
-    console.log('=== Create Product Request ===');
+    console.log('=== Create Franchise Product Request ===');
     console.log('Request body:', JSON.stringify(req.body, null, 2));
     
     const errors = validationResult(req);
@@ -334,39 +337,42 @@ router.post('/', [
       });
     }
 
-    // Check if SKU already exists
+    // Check if this franchise already has this product
     const existingProduct = await FranchiseProduct.findOne({ 
-      sku: req.body.sku,
+      bharatmartProduct: req.body.bharatmartProduct,
       franchise: req.body.franchise
     });
     
     if (existingProduct) {
       return res.status(400).json({
         success: false,
-        error: 'Product with this SKU already exists for this franchise'
+        error: 'This product already exists for this franchise'
       });
     }
 
-    // If bharatmartProductId is provided, verify the main product exists
-    if (req.body.bharatmartProductId) {
-      const mainProduct = await Product.findById(req.body.bharatmartProductId);
-      if (!mainProduct) {
-        return res.status(404).json({
-          success: false,
-          error: 'Main product not found'
-        });
-      }
+    // Verify the main product exists
+    const mainProduct = await Product.findById(req.body.bharatmartProduct);
+    if (!mainProduct) {
+      return res.status(404).json({
+        success: false,
+        error: 'Main product not found'
+      });
     }
 
     const product = new FranchiseProduct(req.body);
     await product.save();
 
+    // Populate the response
+    const populatedProduct = await FranchiseProduct.findById(product._id)
+      .populate('franchise', 'name industry')
+      .populate('bharatmartProduct', 'name description sku category brand images costPrice stock');
+
     res.status(201).json({
       success: true,
-      data: product
+      data: populatedProduct
     });
   } catch (error) {
-    console.error('Create product error:', error);
+    console.error('Create franchise product error:', error);
     res.status(500).json({
       success: false,
       error: 'Server error',
@@ -375,11 +381,14 @@ router.post('/', [
   }
 });
 
-// Update product
+// Update product (only franchise-specific fields)
 router.put('/:id', [
   authenticateAdminOrFranchise,
   param('id').isMongoId().withMessage('Invalid product ID'),
-  ...validateProduct
+  body("stock").optional().isInt({ min: 0 }).withMessage("Stock must be a non-negative integer"),
+  body("minStock").optional().isInt({ min: 0 }).withMessage("Min stock must be a non-negative integer"),
+  body("sellingPrice").optional().isFloat({ min: 0 }).withMessage("Selling price must be a non-negative number"),
+  body("isActive").optional().isBoolean().withMessage("isActive must be a boolean")
 ], async (req: AuthRequest, res: AuthResponse) => {
   try {
     const errors = validationResult(req);
@@ -399,31 +408,30 @@ router.put('/:id', [
       });
     }
 
-    // Check SKU uniqueness if changing
-    if (req.body.sku && req.body.sku !== product.sku) {
-      const existingProduct = await FranchiseProduct.findOne({ 
-        sku: req.body.sku,
-        franchise: product.franchise,
-        _id: { $ne: req.params.id }
-      });
-      
-      if (existingProduct) {
-        return res.status(400).json({
-          success: false,
-          error: 'Product with this SKU already exists for this franchise'
-        });
+    // Only update allowed fields
+    const allowedUpdates = ['stock', 'minStock', 'sellingPrice', 'isActive'];
+    const updates: any = {};
+    
+    allowedUpdates.forEach(field => {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
       }
-    }
+    });
 
-    Object.assign(product, req.body);
+    Object.assign(product, updates);
     await product.save();
+
+    // Populate the response
+    const populatedProduct = await FranchiseProduct.findById(product._id)
+      .populate('franchise', 'name industry')
+      .populate('bharatmartProduct', 'name description sku category brand images costPrice stock');
 
     res.json({
       success: true,
-      data: product
+      data: populatedProduct
     });
   } catch (error) {
-    console.error('Update product error:', error);
+    console.error('Update franchise product error:', error);
     res.status(500).json({
       success: false,
       error: 'Server error',

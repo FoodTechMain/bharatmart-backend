@@ -328,13 +328,15 @@ router.get('/stats/overview', authenticateFranchise, async (req: AuthRequest, re
 
     // Get current stock levels
     const products = await FranchiseProduct.find({ franchise: req.franchiseId })
-      .select('name sku stock minStock price bharatmartProductId category brand');
+      .populate('bharatmartProduct', 'name sku category brand images')
+      .select('stock minStock sellingPrice bharatmartProduct')
+      .lean();
 
     const stockStats = {
       totalProducts: products.length,
-      totalStockValue: products.reduce((sum, p) => sum + (p.stock * p.price), 0),
-      lowStockProducts: products.filter(p => p.stock <= p.minStock).length,
-      outOfStockProducts: products.filter(p => p.stock === 0).length
+      totalStockValue: products.reduce((sum: number, p: any) => sum + (p.stock * p.sellingPrice), 0),
+      lowStockProducts: products.filter((p: any) => p.stock <= p.minStock).length,
+      outOfStockProducts: products.filter((p: any) => p.stock === 0).length
     };
 
     res.json({
@@ -343,8 +345,8 @@ router.get('/stats/overview', authenticateFranchise, async (req: AuthRequest, re
         transactionStats: stats,
         stockStats,
         lowStockProducts: products
-          .filter(p => p.stock <= p.minStock)
-          .sort((a, b) => a.stock - b.stock)
+          .filter((p: any) => p.stock <= p.minStock)
+          .sort((a: any, b: any) => a.stock - b.stock)
           .slice(0, 10)
       }
     });

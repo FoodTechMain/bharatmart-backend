@@ -175,7 +175,7 @@ router.post('/', [
         });
       }
 
-      if (String(franchiseProduct.bharatmartProductId) !== String(item.bharatmartProduct)) {
+      if (String(franchiseProduct.bharatmartProduct) !== String(item.bharatmartProduct)) {
         return res.status(400).json({
           success: false,
           error: `Franchise product ${item.franchiseProduct} is not linked to main product ${item.bharatmartProduct}`
@@ -306,7 +306,7 @@ router.post('/request', [
         });
       }
 
-      if (String(franchiseProduct.bharatmartProductId) !== String(item.bharatmartProduct)) {
+      if (String(franchiseProduct.bharatmartProduct) !== String(item.bharatmartProduct)) {
         return res.status(400).json({
           success: false,
           error: `Franchise product ${item.franchiseProduct} is not linked to main product ${item.bharatmartProduct}`

@@ -175,7 +175,14 @@ export const authenticateAdminOrFranchise = async (
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
+    console.log('[authenticateAdminOrFranchise] Request received:', {
+      path: req.path,
+      hasAuthHeader: !!authHeader,
+      tokenLength: token?.length || 0
+    });
+
     if (!token) {
+      console.log('[authenticateAdminOrFranchise] No token provided');
       return res.status(401).json({
         success: false,
         error: 'Access token is required'
@@ -191,14 +198,18 @@ export const authenticateAdminOrFranchise = async (
     console.log('[authenticateAdminOrFranchise] Decoded token:', {
       hasFranchiseId: 'franchiseId' in decoded,
       hasUserId: 'userId' in decoded,
-      role: decoded.role
+      role: decoded.role,
+      franchiseId: 'franchiseId' in decoded ? (decoded as any).franchiseId : undefined,
+      userId: 'userId' in decoded ? (decoded as any).userId : undefined
     });
 
     // Check if it's a franchise token
     if ('franchiseId' in decoded && decoded.role === 'franchise') {
-      const franchise = await Franchise.findById(decoded.franchiseId);
+      console.log('[authenticateAdminOrFranchise] Processing franchise token for ID:', (decoded as any).franchiseId);
+      const franchise = await Franchise.findById((decoded as any).franchiseId);
       
       if (!franchise) {
+        console.error('[authenticateAdminOrFranchise] Franchise not found:', (decoded as any).franchiseId);
         return res.status(404).json({
           success: false,
           error: 'Franchise not found'
@@ -212,6 +223,7 @@ export const authenticateAdminOrFranchise = async (
         });
       }
 
+      console.log('[authenticateAdminOrFranchise] Franchise authenticated successfully:', franchise._id);
       req.franchiseId = franchise._id;
       req.userType = 'franchise';
       return next();
@@ -219,9 +231,11 @@ export const authenticateAdminOrFranchise = async (
 
     // Check if it's an admin token
     if ('userId' in decoded) {
-      const user = await User.findById(decoded.userId).select('-password');
+      console.log('[authenticateAdminOrFranchise] Processing admin token for user ID:', (decoded as any).userId);
+      const user = await User.findById((decoded as any).userId).select('-password');
       
       if (!user) {
+        console.error('[authenticateAdminOrFranchise] User not found:', (decoded as any).userId);
         return res.status(404).json({
           success: false,
           error: 'User not found'
@@ -246,7 +260,11 @@ export const authenticateAdminOrFranchise = async (
     });
 
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error('[authenticateAdminOrFranchise] Authentication error:', error);
+    console.error('[authenticateAdminOrFranchise] Error details:', {
+      name: (error as Error).name,
+      message: (error as Error).message
+    });
     
     if (error instanceof jwt.JsonWebTokenError) {
       return res.status(401).json({
