@@ -328,7 +328,7 @@ router.get('/stats/overview', authenticateFranchise, async (req: AuthRequest, re
 
     // Get current stock levels
     const products = await FranchiseProduct.find({ franchise: req.franchiseId })
-      .select('name sku stock minStock price');
+      .select('name sku stock minStock price bharatmartProductId category brand');
 
     const stockStats = {
       totalProducts: products.length,

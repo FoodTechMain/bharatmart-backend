@@ -263,4 +263,48 @@ router.delete('/:id', authenticateToken, requirePermission('product:delete'), as
   }
 });
 
+// Get low stock products
+router.get('/low-stock', authenticateToken, async (req: AuthRequest, res: AuthResponse) => {
+  try {
+    const { page = '1', limit = '10' } = req.query;
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+
+    const products = await Product.find({
+      $expr: { $lte: ['$stock', '$minStock'] }
+    })
+      .populate('category', 'name')
+      .populate('brand', 'name')
+      .sort({ stock: 1 })
+      .limit(limitNum)
+      .skip((pageNum - 1) * limitNum)
+      .exec();
+
+    const total = await Product.countDocuments({
+      $expr: { $lte: ['$stock', '$minStock'] }
+    });
+
+    const response: PaginatedResponse<IProduct[]> = {
+      success: true,
+      data: products,
+      pagination: {
+        total,
+        currentPage: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+        limit: limitNum,
+        hasNext: pageNum * limitNum < total,
+        hasPrev: pageNum > 1
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      details: (error as Error).message
+    });
+  }
+});
+
 export default router;

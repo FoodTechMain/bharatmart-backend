@@ -24,6 +24,7 @@ export interface IFranchiseProduct extends ITimestamps {
   metaDescription?: string;
   metaKeywords?: string[];
   importBatch?: string;
+  bharatmartProductId?: Types.ObjectId; // Reference to the main Bharatmart product
 }
 
 export interface IFranchiseProductDocument extends IFranchiseProduct, Document {
@@ -174,6 +175,11 @@ const franchiseProductSchema = new Schema<IFranchiseProductDocument, IFranchiseP
   importBatch: {
     type: String,
     trim: true
+  },
+  bharatmartProductId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Product', // Reference to the main Product model
+    index: true
   }
 }, {
   timestamps: true
@@ -187,6 +193,7 @@ franchiseProductSchema.index({ brand: 1 });
 franchiseProductSchema.index({ isActive: 1 });
 franchiseProductSchema.index({ isFeatured: 1 });
 franchiseProductSchema.index({ importBatch: 1 });
+franchiseProductSchema.index({ bharatmartProductId: 1 });
 
 // Method to update stock
 franchiseProductSchema.methods.updateStock = async function(quantity: number): Promise<void> {

@@ -188,6 +188,12 @@ export const authenticateAdminOrFranchise = async (
       process.env.JWT_SECRET || 'your-secret-key'
     ) as (FranchiseJwtPayload | AdminJwtPayload);
 
+    console.log('[authenticateAdminOrFranchise] Decoded token:', {
+      hasFranchiseId: 'franchiseId' in decoded,
+      hasUserId: 'userId' in decoded,
+      role: decoded.role
+    });
+
     // Check if it's a franchise token
     if ('franchiseId' in decoded && decoded.role === 'franchise') {
       const franchise = await Franchise.findById(decoded.franchiseId);

@@ -5,6 +5,7 @@ import multer, { FileFilterCallback } from 'multer';
 import path from 'path';
 import { body, validationResult, param, query } from 'express-validator';
 import FranchiseProduct, { IFranchiseProduct } from '../../models/Franchise/FranchiseProduct';
+import Product from '../../models/Product/Product';
 import Franchise from '../../models/Franchise/Franchise';
 import ExcelProcessor from '../../utils/excelProcessor';
 import { authenticateAdminOrFranchise } from '../../middleware/franchiseAuth';
@@ -128,15 +129,28 @@ const validateProduct = [
     .isLength({ min: 3, max: 50 })
     .withMessage("SKU must be between 3 and 50 characters"),
 
+  body("price")
+    .isFloat({ min: 0 })
+    .withMessage("Price must be a non-negative number"),
+
   body("stock")
     .optional()
     .isInt({ min: 0 })
     .withMessage("Stock must be a non-negative integer"),
 
+  body("minStock")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Min stock must be a non-negative integer"),
+
   body("category")
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage("Category must be between 2 and 100 characters"),
+
+  body("franchise")
+    .isMongoId()
+    .withMessage("Valid franchise ID is required"),
 ];
 
 // Get all franchise products with advanced filtering
@@ -180,9 +194,9 @@ router.get('/', [
     }
     
     if (minPrice || maxPrice) {
-      query.sellingPrice = {};
-      if (minPrice) query.sellingPrice.$gte = parseFloat(minPrice);
-      if (maxPrice) query.sellingPrice.$lte = parseFloat(maxPrice);
+      query.price = {};
+      if (minPrice) query.price.$gte = parseFloat(minPrice);
+      if (maxPrice) query.price.$lte = parseFloat(maxPrice);
     }
     
     if (lowStock === 'true') {
@@ -221,8 +235,8 @@ router.get('/', [
         $group: {
           _id: null,
           totalProducts: { $sum: 1 },
-          totalValue: { $sum: { $multiply: ['$stock', '$sellingPrice'] } },
-          avgPrice: { $avg: '$sellingPrice' },
+          totalValue: { $sum: { $multiply: ['$stock', '$price'] } },
+          avgPrice: { $avg: '$price' },
           lowStockCount: {
             $sum: {
               $cond: [{ $lte: ['$stock', '$minStock'] }, 1, 0]
@@ -302,11 +316,17 @@ router.get('/:id', [
 // Create new product
 router.post('/', [
   authenticateAdminOrFranchise,
+  body("bharatmartProductId").optional().isMongoId().withMessage("Valid main product ID is required if provided"),
   ...validateProduct
 ], async (req: AuthRequest, res: AuthResponse) => {
   try {
+    console.log('=== Create Product Request ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.error('=== Validation Errors ===');
+      console.error('Errors:', JSON.stringify(errors.array(), null, 2));
       return res.status(400).json({
         success: false,
         error: 'Validation failed',
@@ -325,6 +345,17 @@ router.post('/', [
         success: false,
         error: 'Product with this SKU already exists for this franchise'
       });
+    }
+
+    // If bharatmartProductId is provided, verify the main product exists
+    if (req.body.bharatmartProductId) {
+      const mainProduct = await Product.findById(req.body.bharatmartProductId);
+      if (!mainProduct) {
+        return res.status(404).json({
+          success: false,
+          error: 'Main product not found'
+        });
+      }
     }
 
     const product = new FranchiseProduct(req.body);
@@ -741,8 +772,8 @@ router.get('/stats/overview', [
           totalProducts: { $sum: 1 },
           activeProducts: { $sum: { $cond: [{ $eq: ['$isActive', true] }, 1, 0] } },
           featuredProducts: { $sum: { $cond: [{ $eq: ['$isFeatured', true] }, 1, 0] } },
-          totalValue: { $sum: { $multiply: ['$stock', '$sellingPrice'] } },
-          avgPrice: { $avg: '$sellingPrice' },
+          totalValue: { $sum: { $multiply: ['$stock', '$price'] } },
+          avgPrice: { $avg: '$price' },
           lowStockCount: { $sum: { $cond: [{ $lte: ['$stock', '$minStock'] }, 1, 0] } },
           totalStock: { $sum: '$stock' }
         }
@@ -755,8 +786,8 @@ router.get('/stats/overview', [
         $group: {
           _id: '$category',
           count: { $sum: 1 },
-          totalValue: { $sum: { $multiply: ['$stock', '$sellingPrice'] } },
-          avgPrice: { $avg: '$sellingPrice' }
+          totalValue: { $sum: { $multiply: ['$stock', '$price'] } },
+          avgPrice: { $avg: '$price' }
         }
       },
       { $sort: { count: -1 } },
