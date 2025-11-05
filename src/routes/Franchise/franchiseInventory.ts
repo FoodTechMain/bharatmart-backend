@@ -76,11 +76,21 @@ router.get('/', authenticateFranchise, [
       .lean()
       .exec();
 
+    // Filter out transactions with null products (deleted products) and add fallback
+    const validTransactions = transactions.map(transaction => ({
+      ...transaction,
+      product: transaction.product || { 
+        _id: null, 
+        name: 'Deleted Product', 
+        sku: 'N/A' 
+      }
+    }));
+
     const total = await FranchiseInventory.countDocuments(query);
 
     const response: PaginatedResponse<any> = {
       success: true,
-      data: transactions,
+      data: validTransactions,
       pagination: {
         total,
         currentPage: pageNum,
@@ -432,31 +442,46 @@ router.get('/reports/stock-valuation', authenticateFranchise, async (req: AuthRe
       franchise: req.franchiseId,
       isActive: true 
     })
-      .select('name sku stock price costPrice category brand');
+      .populate('bharatmartProduct', 'name sku category brand price costPrice')
+      .select('stock minStock sellingPrice bharatmartProduct')
+      .lean();
 
-    const valuation = products.map(product => ({
-      product: {
-        id: product._id,
-        name: product.name,
-        sku: product.sku,
-        category: product.category,
-        brand: product.brand
-      },
-      stock: product.stock,
-      costPrice: product.costPrice || 0,
-      sellingPrice: product.price,
-      stockValueAtCost: product.stock * (product.costPrice || 0),
-      stockValueAtSelling: product.stock * product.price,
-      potentialProfit: product.stock * (product.price - (product.costPrice || 0))
-    }));
+    console.log('Found products:', products.length);
+    
+    const valuation = products
+      .filter((product: any) => product.bharatmartProduct) // Filter out products with null bharatmartProduct
+      .map((product: any) => {
+        const stock = product.stock || 0;
+        const costPrice = product.bharatmartProduct?.costPrice || product.bharatmartProduct?.price || 0;
+        const sellingPrice = product.sellingPrice || 0;
+        
+        return {
+          product: {
+            id: product._id,
+            name: product.bharatmartProduct?.name || 'Unknown',
+            sku: product.bharatmartProduct?.sku || 'N/A',
+            category: product.bharatmartProduct?.category || 'Uncategorized',
+            brand: product.bharatmartProduct?.brand || 'Unknown'
+          },
+          stock: stock,
+          costPrice: costPrice,
+          sellingPrice: sellingPrice,
+          stockValueAtCost: stock * costPrice,
+          stockValueAtSelling: stock * sellingPrice,
+          potentialProfit: stock * (sellingPrice - costPrice)
+        };
+      });
 
     const summary = {
-      totalStockValueAtCost: valuation.reduce((sum, v) => sum + v.stockValueAtCost, 0),
-      totalStockValueAtSelling: valuation.reduce((sum, v) => sum + v.stockValueAtSelling, 0),
-      totalPotentialProfit: valuation.reduce((sum, v) => sum + v.potentialProfit, 0),
-      totalProducts: products.length,
-      totalStockUnits: products.reduce((sum, p) => sum + p.stock, 0)
+      totalStockValueAtCost: valuation.reduce((sum, v) => sum + (v.stockValueAtCost || 0), 0),
+      totalStockValueAtSelling: valuation.reduce((sum, v) => sum + (v.stockValueAtSelling || 0), 0),
+      totalPotentialProfit: valuation.reduce((sum, v) => sum + (v.potentialProfit || 0), 0),
+      totalProducts: valuation.length,
+      totalStockUnits: valuation.reduce((sum, v) => sum + (v.stock || 0), 0)
     };
+
+    console.log('Summary:', summary);
+    console.log('Sample valuation:', valuation[0]);
 
     res.json({
       success: true,
