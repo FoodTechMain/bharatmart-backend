@@ -193,23 +193,22 @@ export const authenticateAdminOrFranchise = async (
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET || 'your-secret-key'
-    ) as (FranchiseJwtPayload | AdminJwtPayload);
+    ) as any; // Use any to access properties dynamically
 
     console.log('[authenticateAdminOrFranchise] Decoded token:', {
+      fullPayload: decoded,
       hasFranchiseId: 'franchiseId' in decoded,
       hasUserId: 'userId' in decoded,
-      role: decoded.role,
-      franchiseId: 'franchiseId' in decoded ? (decoded as any).franchiseId : undefined,
-      userId: 'userId' in decoded ? (decoded as any).userId : undefined
+      role: decoded.role
     });
 
-    // Check if it's a franchise token
-    if ('franchiseId' in decoded && decoded.role === 'franchise') {
-      console.log('[authenticateAdminOrFranchise] Processing franchise token for ID:', (decoded as any).franchiseId);
-      const franchise = await Franchise.findById((decoded as any).franchiseId);
+    // Check if it's a franchise token - role should be 'franchise' and franchiseId should exist
+    if (decoded.role === 'franchise' && decoded.franchiseId) {
+      console.log('[authenticateAdminOrFranchise] Processing franchise token for ID:', decoded.franchiseId);
+      const franchise = await Franchise.findById(decoded.franchiseId);
       
       if (!franchise) {
-        console.error('[authenticateAdminOrFranchise] Franchise not found:', (decoded as any).franchiseId);
+        console.error('[authenticateAdminOrFranchise] Franchise not found:', decoded.franchiseId);
         return res.status(404).json({
           success: false,
           error: 'Franchise not found'
@@ -217,6 +216,7 @@ export const authenticateAdminOrFranchise = async (
       }
 
       if (!franchise.isActive) {
+        console.error('[authenticateAdminOrFranchise] Franchise is inactive:', decoded.franchiseId);
         return res.status(401).json({
           success: false,
           error: 'Franchise account is inactive'
@@ -229,13 +229,13 @@ export const authenticateAdminOrFranchise = async (
       return next();
     }
 
-    // Check if it's an admin token
-    if ('userId' in decoded) {
-      console.log('[authenticateAdminOrFranchise] Processing admin token for user ID:', (decoded as any).userId);
-      const user = await User.findById((decoded as any).userId).select('-password');
+    // Check if it's an admin token - should have userId and NOT be a franchise role
+    if (decoded.userId && decoded.role !== 'franchise') {
+      console.log('[authenticateAdminOrFranchise] Processing admin token for user ID:', decoded.userId);
+      const user = await User.findById(decoded.userId).select('-password');
       
       if (!user) {
-        console.error('[authenticateAdminOrFranchise] User not found:', (decoded as any).userId);
+        console.error('[authenticateAdminOrFranchise] User not found:', decoded.userId);
         return res.status(404).json({
           success: false,
           error: 'User not found'
@@ -243,20 +243,23 @@ export const authenticateAdminOrFranchise = async (
       }
 
       if (!user.isActive) {
+        console.error('[authenticateAdminOrFranchise] User is inactive:', decoded.userId);
         return res.status(401).json({
           success: false,
           error: 'User account is inactive'
         });
       }
 
+      console.log('[authenticateAdminOrFranchise] Admin authenticated successfully:', user._id);
       req.user = user;
       req.userType = 'admin';
       return next();
     }
 
+    console.error('[authenticateAdminOrFranchise] Invalid token format:', decoded);
     return res.status(401).json({
       success: false,
-      error: 'Invalid token format'
+      error: 'Invalid token format - neither valid franchise nor admin token'
     });
 
   } catch (error) {

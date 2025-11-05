@@ -87,6 +87,100 @@ router.get('/', [
   }
 });
 
+// Get transfers for logged-in franchise (MUST come before /:id route)
+router.get('/my-transfers', [
+  authenticateAdminOrFranchise
+], async (req: AuthRequest, res: AuthResponse) => {
+  try {
+    const {
+      page = '1',
+      limit = '10',
+      status,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query as TransferQuery;
+
+    console.log('[my-transfers] Request received from:', req.userType);
+    console.log('[my-transfers] franchiseId:', req.franchiseId);
+    console.log('[my-transfers] user:', req.user?._id);
+
+    // Get franchise ID - could be from franchiseId (franchise user) or req.user (admin)
+    const franchiseId = req.franchiseId || req.user?.franchise || req.user?._id;
+    
+    if (!franchiseId) {
+      console.error('[my-transfers] No franchise ID found');
+      return res.status(400).json({
+        success: false,
+        error: 'Franchise ID not found in token'
+      });
+    }
+
+    console.log('[my-transfers] Using franchise ID:', franchiseId);
+
+    const query: any = { franchise: franchiseId };
+    
+    if (status) {
+      query.status = status;
+    }
+
+    // Sort options
+    const sortOptions: { [key: string]: 1 | -1 } = {};
+    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+
+    const transfers = await FranchiseTransfer.find(query)
+      .populate('bharatmartManager', 'firstName lastName email')
+      .populate('items.bharatmartProduct', 'name sku stock')
+      .populate('items.franchiseProduct', 'name sku stock')
+      .populate('deliveredBy', 'firstName lastName email')
+      .sort(sortOptions)
+      .limit(limitNum)
+      .skip((pageNum - 1) * limitNum)
+      .exec();
+
+    const total = await FranchiseTransfer.countDocuments(query);
+
+    // Get stats
+    const stats = await FranchiseTransfer.aggregate([
+      { $match: { franchise: franchiseId } },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    console.log('[my-transfers] Found', transfers.length, 'transfers');
+
+    const response: PaginatedResponse<ITransfer[]> = {
+      success: true,
+      data: transfers,
+      pagination: {
+        total,
+        currentPage: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum)
+      },
+      stats: stats.reduce((acc: any, curr: any) => {
+        acc[curr._id] = curr.count;
+        return acc;
+      }, {})
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('[my-transfers] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      details: (error as Error).message
+    });
+  }
+});
+
 // Get transfer by ID
 router.get('/:id', [
   authenticateToken,
@@ -740,91 +834,6 @@ router.patch('/:id/note', [
 // ============================================
 // FRANCHISE-ACCESSIBLE ENDPOINTS
 // ============================================
-
-// Get transfers for logged-in franchise
-router.get('/my-transfers', [
-  authenticateAdminOrFranchise
-], async (req: AuthRequest, res: AuthResponse) => {
-  try {
-    const {
-      page = '1',
-      limit = '10',
-      status,
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
-    } = req.query as TransferQuery;
-
-    // Get franchise ID - could be from franchiseId (franchise user) or req.user (admin)
-    const franchiseId = req.franchiseId || req.user?.franchise || req.user?._id;
-    
-    if (!franchiseId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Franchise ID not found in token'
-      });
-    }
-
-    const query: any = { franchise: franchiseId };
-    
-    if (status) {
-      query.status = status;
-    }
-
-    // Sort options
-    const sortOptions: { [key: string]: 1 | -1 } = {};
-    sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
-
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-
-    const transfers = await FranchiseTransfer.find(query)
-      .populate('bharatmartManager', 'firstName lastName email')
-      .populate('items.bharatmartProduct', 'name sku stock')
-      .populate('items.franchiseProduct', 'name sku stock')
-      .populate('deliveredBy', 'firstName lastName email')
-      .sort(sortOptions)
-      .limit(limitNum)
-      .skip((pageNum - 1) * limitNum)
-      .exec();
-
-    const total = await FranchiseTransfer.countDocuments(query);
-
-    // Get stats
-    const stats = await FranchiseTransfer.aggregate([
-      { $match: { franchise: franchiseId } },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    const response: PaginatedResponse<ITransfer[]> = {
-      success: true,
-      data: transfers,
-      pagination: {
-        total,
-        currentPage: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(total / limitNum)
-      },
-      stats: stats.reduce((acc: any, curr: any) => {
-        acc[curr._id] = curr.count;
-        return acc;
-      }, {})
-    };
-
-    res.json(response);
-  } catch (error) {
-    console.error('Get franchise transfers error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Server error',
-      details: (error as Error).message
-    });
-  }
-});
 
 // Franchise marks transfer as received
 router.patch('/:id/receive', [
