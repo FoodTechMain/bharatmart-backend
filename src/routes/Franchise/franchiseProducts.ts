@@ -532,26 +532,36 @@ router.post('/bulk/import', [
     }
 
     // Check for duplicate SKUs
-    const skus = validProducts.map(p => p.sku);
+    const skus = validProducts.map((p: any) => p.sku);
     const existingProducts = await FranchiseProduct.find({
-      sku: { $in: skus },
       franchise: franchise
-    });
+    }).populate('bharatmartProduct', 'sku name');
 
     if (existingProducts.length > 0) {
-      const duplicateSkus = existingProducts.map(p => p.sku);
-      return res.status(400).json({
-        success: false,
-        error: 'Duplicate SKUs found',
-        details: {
-          duplicateSkus,
-          existingProducts: existingProducts.map(p => ({ sku: p.sku, name: p.name }))
-        }
-      });
+      const existingSkus = existingProducts
+        .map((p: any) => p.bharatmartProduct?.sku)
+        .filter(Boolean);
+      const duplicateSkus = skus.filter((sku: string) => existingSkus.includes(sku));
+      
+      if (duplicateSkus.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Duplicate SKUs found',
+          details: {
+            duplicateSkus,
+            existingProducts: existingProducts
+              .filter((p: any) => duplicateSkus.includes(p.bharatmartProduct?.sku))
+              .map((p: any) => ({ 
+                sku: p.bharatmartProduct?.sku, 
+                name: p.bharatmartProduct?.name 
+              }))
+          }
+        });
+      }
     }
 
     // Add franchise and import batch to each product
-    const productsToInsert = validProducts.map(product => ({
+    const productsToInsert = validProducts.map((product: any) => ({
       ...product,
       franchise: franchise,
       importBatch: importBatch,

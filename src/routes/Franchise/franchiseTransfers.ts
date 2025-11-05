@@ -106,7 +106,7 @@ router.get('/my-transfers', [
     console.log('[my-transfers] user:', req.user?._id);
 
     // Get franchise ID - could be from franchiseId (franchise user) or req.user (admin)
-    const franchiseId = req.franchiseId || req.user?.franchise || req.user?._id;
+    const franchiseId = req.franchiseId || req.user?._id;
     
     if (!franchiseId) {
       console.error('[my-transfers] No franchise ID found');
@@ -360,7 +360,7 @@ router.post('/request', [
     const { items, notes } = req.body;
     
     // Get franchise ID - could be from franchiseId (franchise user) or req.user (admin)
-    const franchiseId = req.franchiseId || req.user?.franchise || req.user?._id;
+    const franchiseId = req.franchiseId || req.user?._id;
     
     if (!franchiseId) {
       return res.status(400).json({
@@ -904,7 +904,7 @@ router.patch('/:id/receive', [
     }
 
     // Verify franchise owns this transfer
-    const franchiseId = req.franchiseId || req.user?.franchise || req.user?._id;
+    const franchiseId = req.franchiseId || req.user?._id;
     if (String(transfer.franchise) !== String(franchiseId)) {
       return res.status(403).json({
         success: false,
