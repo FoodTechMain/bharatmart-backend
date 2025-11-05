@@ -9,7 +9,7 @@ interface ExcelValidationError {
 }
 
 interface ValidationResult {
-  validProducts: Partial<IFranchiseProduct>[];
+  validProducts: any[];
   errors: ExcelValidationError[];
 }
 
@@ -47,7 +47,7 @@ class ExcelProcessor {
   }
 
   static validateProducts(products: ExcelProductData[]): ValidationResult {
-    const validProducts: Partial<IFranchiseProduct>[] = [];
+    const validProducts: any[] = [];
     const errors: ExcelValidationError[] = [];
 
     products.forEach((product, index) => {
@@ -118,8 +118,8 @@ class ExcelProcessor {
       }
 
       if (rowErrors.length === 0) {
-        // Convert to FranchiseProduct format
-        const validProduct: Partial<IFranchiseProduct> = {
+        // Convert to product format (with all fields for legacy support)
+        const validProduct: any = {
           name: product.name,
           description: product.description,
           sku: product.sku,
@@ -152,8 +152,8 @@ class ExcelProcessor {
     return { validProducts, errors };
   }
 
-  static exportToExcel(products: IFranchiseProduct[]): XLSX.WorkBook {
-    const worksheet = XLSX.utils.json_to_sheet(products.map(product => ({
+  static exportToExcel(products: any[]): XLSX.WorkBook {
+    const worksheet = XLSX.utils.json_to_sheet(products.map((product: any) => ({
       name: product.name,
       description: product.description,
       sku: product.sku,

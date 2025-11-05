@@ -23,28 +23,43 @@ async function testInventorySystem() {
     console.log(`✅ Found franchise: ${franchise.name} (${franchise._id})\n`);
 
     // Find or create a test product
-    let product = await FranchiseProduct.findOne({ franchise: franchise._id });
+    let product = await FranchiseProduct.findOne({ franchise: franchise._id }).populate('bharatmartProduct');
     
     if (!product) {
       console.log('Creating a test product...');
+      // First create a main product if needed
+      const Product = (await import('../models/Product/Product')).default;
+      let mainProduct = await Product.findOne({ sku: { $regex: /^TEST-/ } });
+      
+      if (!mainProduct) {
+        mainProduct = await Product.create({
+          name: 'Test Product for Inventory',
+          description: 'A test product to demonstrate inventory management',
+          category: 'Electronics',
+          brand: 'Test Brand',
+          sku: `TEST-${Date.now()}`,
+          salePrice: 1500,
+          costPrice: 1000,
+          stock: 100,
+          minStock: 10,
+          isActive: true,
+          isFeatured: false,
+          tags: ['test', 'inventory']
+        });
+      }
+      
       product = await FranchiseProduct.create({
         franchise: franchise._id,
-        name: 'Test Product for Inventory',
-        description: 'A test product to demonstrate inventory management',
-        category: 'Electronics',
-        brand: 'Test Brand',
-        sku: `TEST-${Date.now()}`,
-        price: 1500,
-        costPrice: 1000,
+        bharatmartProduct: mainProduct._id,
         stock: 50,
         minStock: 10,
-        isActive: true,
-        isFeatured: false,
-        tags: ['test', 'inventory']
+        sellingPrice: 1500,
+        isActive: true
       });
-      console.log(`✅ Created test product: ${product.name} (${product._id})\n`);
+      await product.populate('bharatmartProduct');
+      console.log(`✅ Created test product (${product._id})\n`);
     } else {
-      console.log(`✅ Found existing product: ${product.name} (${product._id})\n`);
+      console.log(`✅ Found existing product (${product._id})\n`);
     }
 
     console.log(`Initial stock: ${product.stock}\n`);
