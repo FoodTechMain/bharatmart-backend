@@ -18,6 +18,8 @@ export interface IProduct {
 
 export interface IProductDocument extends IProduct, Document {
   _id: Types.ObjectId;
+  updateStock(quantity: number): Promise<void>;
+  isLowStock(): boolean;
 }
 
 interface IProductModel extends Model<IProductDocument> {}
@@ -94,5 +96,19 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     default: true
   }
 });
+
+// Method to update stock
+productSchema.methods.updateStock = async function(quantity: number): Promise<void> {
+  this.stock += quantity;
+  if (this.stock < 0) {
+    this.stock = 0;
+  }
+  await this.save();
+};
+
+// Method to check if product is low on stock
+productSchema.methods.isLowStock = function(): boolean {
+  return this.stock <= this.minStock;
+};
 
 export default mongoose.model<IProductDocument, IProductModel>('Product', productSchema);
