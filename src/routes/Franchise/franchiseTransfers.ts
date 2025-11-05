@@ -1,5 +1,6 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
+import { Types } from 'mongoose';
 import FranchiseTransfer, { ITransfer, TransferStatus } from '../../models/Franchise/FranchiseTransfer';
 import Franchise from '../../models/Franchise/Franchise';
 import Product from '../../models/Product/Product';
@@ -663,6 +664,28 @@ router.patch('/:id/status', [
           $inc: { stock: item.quantity }
         });
       }
+      
+      // Record inventory transactions for franchise products
+      const FranchiseInventory = (await import('../../models/Franchise/FranchiseInventory')).default;
+      
+      for (const item of transfer.items) {
+        try {
+          await FranchiseInventory.recordTransaction(
+            transfer.franchise as Types.ObjectId,
+            item.franchiseProduct as Types.ObjectId,
+            'reorder',
+            item.quantity,
+            {
+              referenceNumber: transfer.transferNumber,
+              notes: `Stock received via transfer ${transfer.transferNumber}`,
+              performedBy: req.user?._id,
+              costPerUnit: item.unitPrice
+            }
+          );
+        } catch (error) {
+          console.error(`Failed to record inventory transaction for product ${item.franchiseProduct}:`, error);
+        }
+      }
     }
 
     // Handle cancellation - restore inventory if needed
@@ -768,6 +791,28 @@ router.patch('/:id/delivered', [
 
     // Mark as delivered
     await transfer.markAsDelivered(req.user?._id);
+
+    // Record inventory transactions for franchise products
+    const FranchiseInventory = (await import('../../models/Franchise/FranchiseInventory')).default;
+    
+    for (const item of transfer.items) {
+      try {
+        await FranchiseInventory.recordTransaction(
+          transfer.franchise as Types.ObjectId,
+          item.franchiseProduct as Types.ObjectId,
+          'reorder',
+          item.quantity,
+          {
+            referenceNumber: transfer.transferNumber,
+            notes: `Stock received via transfer ${transfer.transferNumber}`,
+            performedBy: req.user?._id,
+            costPerUnit: item.unitPrice
+          }
+        );
+      } catch (error) {
+        console.error(`Failed to record inventory transaction for product ${item.franchiseProduct}:`, error);
+      }
+    }
 
     const updatedTransfer = await FranchiseTransfer.findById(transfer._id)
       .populate('franchise', 'name industry')
@@ -924,6 +969,28 @@ router.patch('/:id/receive', [
 
     // Mark as delivered
     await transfer.markAsDelivered(req.user?._id);
+
+    // Record inventory transactions for franchise products
+    const FranchiseInventory = (await import('../../models/Franchise/FranchiseInventory')).default;
+    
+    for (const item of transfer.items) {
+      try {
+        await FranchiseInventory.recordTransaction(
+          franchiseId as Types.ObjectId,
+          item.franchiseProduct as Types.ObjectId,
+          'reorder',
+          item.quantity,
+          {
+            referenceNumber: transfer.transferNumber,
+            notes: `Stock received via transfer ${transfer.transferNumber}`,
+            performedBy: req.user?._id,
+            costPerUnit: item.unitPrice
+          }
+        );
+      } catch (error) {
+        console.error(`Failed to record inventory transaction for product ${item.franchiseProduct}:`, error);
+      }
+    }
 
     const updatedTransfer = await FranchiseTransfer.findById(transfer._id)
       .populate('bharatmartManager', 'firstName lastName email')
