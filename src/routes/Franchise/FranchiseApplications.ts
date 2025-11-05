@@ -340,4 +340,19 @@ router.patch('/bulk/admin-management', authenticateToken, async (req: Request, r
   }
 });
 
+// Delete application (Admin only)
+router.delete('/:id', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const application = await FranchiseApplication.findByIdAndDelete(req.params.id);
+    if (!application) {
+      return res.status(404).json({ success: false, message: 'Application not found' });
+    }
+
+    res.json({ success: true, message: 'Application deleted successfully' });
+  } catch (error) {
+    console.error('Failed to delete application:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete application', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
 export default router;
