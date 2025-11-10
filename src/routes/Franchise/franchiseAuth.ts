@@ -181,7 +181,6 @@ router.post('/update-password', authenticateFranchise, [
 
     const { oldPassword, newPassword, confirmPassword } = req.body;
 
-    // Check if all fields are provided
     if (!oldPassword || !newPassword || !confirmPassword) {
       return res.status(400).json({
         success: false,
@@ -189,7 +188,6 @@ router.post('/update-password', authenticateFranchise, [
       });
     }
 
-    // Check if new passwords match
     if (newPassword !== confirmPassword) {
       return res.status(400).json({
         success: false,
@@ -197,7 +195,6 @@ router.post('/update-password', authenticateFranchise, [
       });
     }
 
-    // Get franchise ID from authenticated request
     if (!req.franchiseId) {
       return res.status(401).json({
         success: false,
@@ -205,7 +202,6 @@ router.post('/update-password', authenticateFranchise, [
       });
     }
 
-    // Find franchise with password field
     const franchise = await Franchise.findById(req.franchiseId).select('+password');
     
     if (!franchise) {
@@ -215,7 +211,6 @@ router.post('/update-password', authenticateFranchise, [
       });
     }
 
-    // Check if password exists
     if (!franchise.password) {
       return res.status(400).json({
         success: false,
@@ -223,8 +218,8 @@ router.post('/update-password', authenticateFranchise, [
       });
     }
 
-    // Verify old password
-    const isMatch = await Franchise.comparePassword(oldPassword, franchise.password);
+    // Verify old password using bcrypt
+    const isMatch = await bcrypt.compare(oldPassword, franchise.password);
     if (!isMatch) {
       return res.status(400).json({
         success: false,
@@ -232,9 +227,9 @@ router.post('/update-password', authenticateFranchise, [
       });
     }
 
-    // Update password
+    // Set new password (will be hashed by pre-save hook)
     franchise.password = newPassword;
-    await franchise.save();
+    await franchise.save(); // This triggers the pre-save hook which hashes the password
 
     res.json({
       success: true,

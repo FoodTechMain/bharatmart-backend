@@ -161,9 +161,34 @@ const franchiseSchema = new Schema<IFranchise>({
   timestamps: true // This replaces the manual createdAt and updatedAt fields
 });
 
-// Password comparison method
-franchiseSchema.statics.comparePassword = async function(candidatePassword: string, hashedPassword: string): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, hashedPassword);
+// Add or update the pre-save hook to hash password
+franchiseSchema.pre('save', async function(next) {
+  // Only hash the password if it has been modified (or is new)
+  if (!this.isModified('password')) {
+    return next();
+  }
+
+  // Check if password exists
+  if (!this.password) {
+    return next();
+  }
+
+  try {
+    // Hash password with bcrypt
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
+// Add static method to compare passwords
+franchiseSchema.statics.comparePassword = async function(
+  candidatePassword: string,
+  hashedPassword: string
+): Promise<boolean> {
+  return await bcrypt.compare(candidatePassword, hashedPassword);
 };
 
 const Franchise = mongoose.model<IFranchise, IFranchiseModel>('Franchise', franchiseSchema);
