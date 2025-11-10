@@ -37,7 +37,7 @@ jobs:
           echo 'MAX_FILE_SIZE="5242880"' >> .env
           echo 'RATE_LIMIT_WINDOW_MS="900000"' >> .env
           echo 'RATE_LIMIT_MAX_REQUESTS="100"' >> .env
-          echo 'CORS_ORIGIN="https://bharatmart.app,https://admin.bharatmart.app,http://localhost:3000,http://localhost:3001"' >> .env
+          echo 'CORS_ORIGIN="https://bharatmart.app,https://admin.bharatmart.app,http://localhost:3000,http://localhost:3001, https://franchise.bharatmart.app"' >> .env
           echo 'CORS_METHODS="GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS"' >> .env
           
       - name: Build Docker image and push to GHCR
