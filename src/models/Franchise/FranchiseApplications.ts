@@ -94,6 +94,18 @@ const franchiseApplicationSchema = new mongoose.Schema({
     trim: true
   },
 
+  // Selected model information coming from frontend (e.g., key and display data)
+  selectedModel: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  selectedModelDetails: {
+    area: { type: String, trim: true },
+    start: { type: String, trim: true },
+    rate: { type: String, trim: true }
+  },
+
   // Admin Management Information
   adminManagement: {
     cityManager: {
