@@ -355,7 +355,12 @@ router.post('/', [
 
     // Generate and hash password
     const tempPassword = generateSecurePassword();
+    console.log('=== FRANCHISE CREATION DEBUG ===');
+    console.log('Generated temp password:', tempPassword);
+    console.log('Temp password length:', tempPassword.length);
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
+    console.log('Hashed password length:', hashedPassword.length);
+    console.log('=== END DEBUG ===');
 
     // Convert investment range values to numbers if they exist
     const investmentRange = {
@@ -403,7 +408,14 @@ router.post('/', [
     const franchise = new Franchise(franchiseData);
     await franchise.save();
 
-    console.log("the email of the franchise owner is " + req.body.email);
+    console.log('=== EMAIL AND PASSWORD INFO ===');
+    console.log('Franchise email:', req.body.email);
+    console.log('Franchise saved email:', franchise.email);
+    console.log('Franchise ID:', franchise._id);
+    console.log('Temporary password:', tempPassword);
+    console.log('Franchise has password hash:', !!franchise.password);
+    console.log('=== END INFO ===');
+    
     // Send email with credentials if email is provided
     if (req.body.email) {
       try {

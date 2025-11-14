@@ -44,7 +44,16 @@ router.post('/login', [
     }
 
     // Check password
+    console.log('=== LOGIN DEBUG ===');
+    console.log('Email:', email);
+    console.log('Provided password length:', password?.length);
+    console.log('Has stored password hash:', !!franchise.password);
+    console.log('Stored password hash length:', franchise.password?.length);
+    
     const isMatch = await Franchise.comparePassword(password, franchise.password);
+    console.log('Password match result:', isMatch);
+    console.log('=== END DEBUG ===');
+    
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -163,6 +172,52 @@ router.get('/me', async (req: AuthRequest, res: AuthResponse) => {
   }
 });
 
+<<<<<<< HEAD
+=======
+// Test endpoint to verify password hash (development only)
+router.post('/test-password', async (req: AuthRequest, res: AuthResponse) => {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ success: false, error: 'Not available in production' });
+    }
+
+    const { email, password } = req.body;
+    
+    const franchise = await Franchise.findOne({ email }).select('+password');
+    if (!franchise) {
+      return res.json({
+        success: false,
+        error: 'Franchise not found',
+        email: email
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, franchise.password || '');
+    
+    res.json({
+      success: true,
+      data: {
+        email: franchise.email,
+        hasPassword: !!franchise.password,
+        passwordHashLength: franchise.password?.length,
+        providedPasswordLength: password?.length,
+        passwordMatch: isMatch,
+        isActive: franchise.isActive,
+        mustChangePassword: franchise.mustChangePassword
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      details: (error as Error).message
+    });
+  }
+});
+
+export default router;
+
+>>>>>>> 2239086 (Redesigned the Franchise product pages)
 // Update password for franchise (protected)
 router.post('/update-password', authenticateFranchise, [
   body('oldPassword').notEmpty().withMessage('Current password is required'),

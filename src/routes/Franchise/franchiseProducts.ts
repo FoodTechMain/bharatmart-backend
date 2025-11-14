@@ -837,4 +837,99 @@ router.get('/stats/overview', [
   }
 });
 
+// Get franchises with their products grouped
+router.get('/grouped/by-franchise', [
+  authenticateAdminOrFranchise,
+  query('search').optional().isString(),
+  query('page').optional().isInt({ min: 1 }),
+  query('limit').optional().isInt({ min: 1, max: 100 })
+], async (req: AuthRequest, res: AuthResponse) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const searchTerm = req.query.search as string || '';
+
+    // Build franchise filter
+    const franchiseFilter: any = { isActive: true };
+    if (searchTerm) {
+      franchiseFilter.name = { $regex: searchTerm, $options: 'i' };
+    }
+
+    // Get all franchises with pagination
+    const franchises = await Franchise.find(franchiseFilter)
+      .select('_id name industry email phone address isActive createdAt')
+      .sort({ name: 1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const totalFranchises = await Franchise.countDocuments(franchiseFilter);
+
+    // For each franchise, get their products with statistics
+    const franchisesWithProducts = await Promise.all(
+      franchises.map(async (franchise) => {
+        // Get products for this franchise
+        const products = await FranchiseProduct.find({ franchise: franchise._id })
+          .populate({
+            path: 'bharatmartProduct',
+            select: 'name sku description category brand images costPrice stock',
+            populate: [
+              { path: 'category', select: 'name slug' },
+              { path: 'brand', select: 'name logo' }
+            ]
+          })
+          .sort({ createdAt: -1 })
+          .limit(100); // Limit products per franchise to avoid overload
+
+        // Calculate statistics for this franchise
+        const stats = {
+          totalProducts: products.length,
+          activeProducts: products.filter(p => p.isActive).length,
+          lowStockProducts: products.filter(p => p.stock <= p.minStock).length,
+          totalValue: products.reduce((sum, p) => sum + (p.sellingPrice * p.stock), 0),
+          totalStock: products.reduce((sum, p) => sum + p.stock, 0)
+        };
+
+        return {
+          _id: franchise._id,
+          name: franchise.name,
+          industry: franchise.industry,
+          email: franchise.email,
+          phone: franchise.phone,
+          address: franchise.address,
+          isActive: franchise.isActive,
+          createdAt: franchise.createdAt,
+          products: products,
+          stats: stats
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data: franchisesWithProducts,
+      pagination: {
+        page,
+        limit,
+        total: totalFranchises,
+        totalPages: Math.ceil(totalFranchises / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get franchises with products error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      details: (error as Error).message
+    });
+  }
+});
+
 export default router;
