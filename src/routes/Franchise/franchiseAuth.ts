@@ -172,8 +172,6 @@ router.get('/me', async (req: AuthRequest, res: AuthResponse) => {
   }
 });
 
-<<<<<<< HEAD
-=======
 // Test endpoint to verify password hash (development only)
 router.post('/test-password', async (req: AuthRequest, res: AuthResponse) => {
   try {
@@ -215,9 +213,6 @@ router.post('/test-password', async (req: AuthRequest, res: AuthResponse) => {
   }
 });
 
-export default router;
-
->>>>>>> 2239086 (Redesigned the Franchise product pages)
 // Update password for franchise (protected)
 router.post('/update-password', authenticateFranchise, [
   body('oldPassword').notEmpty().withMessage('Current password is required'),
