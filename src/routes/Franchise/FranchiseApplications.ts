@@ -78,6 +78,25 @@ router.post('/apply', async (req: Request, res: Response) => {
     }
 
     const { recaptchaToken: _rc, ...applicationData } = req.body;
+
+    // Map frontend model keys to human-friendly card names before saving
+    // Frontend may send keys like 'compact'|'standard'|'mega' — store as 'Model 1'|'Model 2'|'Model 3'
+    try {
+      const modelMap: Record<string, string> = {
+        compact: 'Model 1',
+        standard: 'Model 2',
+        mega: 'Model 3'
+      };
+      if (applicationData && applicationData.selectedModel) {
+        const key = String(applicationData.selectedModel).toLowerCase();
+        if (modelMap[key]) {
+          applicationData.selectedModel = modelMap[key];
+        }
+      }
+    } catch (mapErr) {
+      console.warn('Failed to normalize selectedModel:', mapErr);
+    }
+
     const application = new FranchiseApplication(applicationData);
     await application.save();
 
