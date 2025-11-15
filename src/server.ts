@@ -39,6 +39,8 @@ import brandsRoutes from './routes/brands';
 import ContactUsQueryRoutes from './routes/Query/contactusQueries';
 import employeeRoutes from './routes/Employee/Employee';
 import departmentRoutes from './routes/Employee/departments';
+import subscribeRoutes from './routes/subscribers';
+import { subscribe } from 'diagnostics_channel';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
@@ -120,6 +122,7 @@ app.use('/api/contact-queries', ContactUsQueryRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/departments', departmentRoutes);
+app.use('/api/subscribers',subscribeRoutes);
 
 // Health check endpoint
 app.get('/api/health', (_req: Request, res: Response) => {
