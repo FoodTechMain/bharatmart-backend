@@ -118,7 +118,7 @@ router.post('/apply', async (req: Request, res: Response) => {
               <style>
                 body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
                 .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
-                .header { background: linear-gradient(135deg, #f97316 0%, #10b981 100%); padding: 30px 20px; text-align: center; }
+                .header { padding: 30px 20px; text-align: center; }
                 .logo { max-width: 200px; height: auto; }
                 .content { padding: 40px 30px; }
                 .greeting { font-size: 24px; color: #1f2937; margin-bottom: 20px; font-weight: 600; }
@@ -167,10 +167,7 @@ router.post('/apply', async (req: Request, res: Response) => {
                   <!-- Application Details -->
                   <div class="info-box">
                     <h3 style="margin-top: 0; color: #1f2937; font-size: 18px;">Application Details</h3>
-                    <div class="info-row">
-                      <span class="info-label">Application ID:</span>
-                      <span class="info-value">${application._id}</span>
-                    </div>
+                    
                     <div class="info-row">
                       <span class="info-label">Submitted On:</span>
                       <span class="info-value">${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
@@ -207,7 +204,7 @@ router.post('/apply', async (req: Request, res: Response) => {
                     <h3>Need Assistance?</h3>
                     <div class="contact-info">
                       <p><strong>📧 Email:</strong> franchise@bharatmart.app</p>
-                      <p><strong>📞 Phone:</strong> +91 70032 60281 | +91 84202 39501</p>
+                      <p><strong>📞 Phone:</strong> +91 70032 60281</p>
                       <p><strong>🕐 Business Hours:</strong> Mon-Sat, 9:00 AM - 7:00 PM IST</p>
                     </div>
                   </div>
