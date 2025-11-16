@@ -230,7 +230,7 @@ router.post('/apply', async (req: Request, res: Response) => {
                   
                   <div class="social-links">
                     <a href="https://bharatmart.app">🌐 Website</a>
-                    <a href="mailto:info@bharatmart.app">✉️ Email</a>
+                    <a href="mailto:support@bharatmart.app">✉️ Email</a>
                   </div>
                   
                   <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">
